@@ -1,5 +1,5 @@
 
-sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/Data/Processed/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+sal <- read.csv("Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
 
 head(sal)
@@ -55,5 +55,7 @@ mean_res(Up_down = "res")
 
 sapply(split(Total, Up_down), mean)
 sapply(split(Total, Type), mean)
+
+plot(mean(Total, Type))
 
 detach(sal)
