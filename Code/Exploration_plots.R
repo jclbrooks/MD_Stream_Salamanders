@@ -1,17 +1,30 @@
+###############################
+# Exploratory plots of salamander and water chemistry
+# J. Brooks
+###############################
 
-sal <- read.csv("Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+# load packages
+library(ggplot2)
+library(dplyr)
+
+
+# read in data
+sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
 
 head(sal)
 str(sal)
 summary(sal)
 
-attach(sal)
-pairs(sal[,c(20,23,24,25,27,28)])
+# attach(sal)
+pairs(sal[ ,c(20,23,24,25,27,28)])
 
-plot(Total~Air, data = sal)
+plot(Total ~ Air, data = sal)
 
-library(ggplot2)
+# Add reference to the up, down
+sal <- sal %>%
+  mutate(type = ifelse(Type == "res", Up_down, Type))
+str(sal)
 
 g1 <- ggplot(sal, aes(Stream, Total, order("POPLICKTRIB","ELKLICK","BLUELICK", "MILL", "BEARHILL", "DUNGHILL", "ALEX", "KOCH", "WSHALEN")))
 #g1 + geom_violin(scale="area", data= NULL) # look for data in ggplot()
@@ -58,4 +71,25 @@ sapply(split(Total, Type), mean)
 
 plot(mean(Total, Type))
 
-detach(sal)
+# detach(sal)
+
+
+# Group by transect-visit
+
+sal_means <- sal %>%
+  group_by(Stream, Type, Transect, Up_down, type) %>%
+  dplyr::select(-Date, -Observers, -Visit) %>%
+  summarise_all(mean, na.rm = TRUE)
+
+sal_sds <- sal %>%
+  group_by(Stream, Type, Transect, Up_down) %>%
+  dplyr::select(-Date, -Observers, -Visit) %>%
+  summarise_all(sd, na.rm = TRUE)
+
+print(sal_means, n = nrow(sal_means))
+print(sal_sds, n = 36)
+
+# plot ggplots with groupings?
+ggplot(sal, aes(x = reorder(type, pH, FUN = median), pH)) + geom_boxplot(fill = "lightblue") + theme_bw()
+
+ggplot(sal, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
