@@ -82,7 +82,7 @@ sal_means <- sal %>%
   summarise_all(mean, na.rm = TRUE)
 
 sal_sds <- sal %>%
-  group_by(Stream, Type, Transect, Up_down) %>%
+  group_by(Stream, Type, Transect, Up_down, type) %>%
   dplyr::select(-Date, -Observers, -Visit) %>%
   summarise_all(sd, na.rm = TRUE)
 
@@ -91,5 +91,9 @@ print(sal_sds, n = 36)
 
 # plot ggplots with groupings?
 ggplot(sal, aes(x = reorder(type, pH, FUN = median), pH)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
 
-ggplot(sal, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_violin(draw_quantiles = 0.5, fill = "lightblue") + theme_bw()
