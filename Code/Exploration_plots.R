@@ -97,3 +97,9 @@ ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(dr
 
 ggplot(sal_means, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
 ggplot(sal_means, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_violin(draw_quantiles = 0.5, fill = "lightblue") + theme_bw()
+
+# Explore the effect of distance from a restoration
+ggplot(data = filter(sal_means, type != "ref"), aes(Dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
+
+ggplot(data = filter(sal_means, type != "ref"), aes(Dist, EBISL)) + geom_boxplot(aes(group = Dist), fill = "lightblue") + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red") + theme_bw()
+
