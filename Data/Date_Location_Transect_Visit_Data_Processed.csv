@@ -1,4 +1,4 @@
-date,stream,type,transect,up_down,dist,vist,DFUSL,DFUSA,DOCHL,DOCHA,DMONL,DMONA,EBISL,EBISA,GPORL,GPORA,PRUBL,PRUBA,total,observers,time_min,air,pH,water,DO,EC,TDS
+date,stream,type,transect,up_down,dist,visit,DFUSL,DFUSA,DOCHL,DOCHA,DMONL,DMONA,EBISL,EBISA,GPORL,GPORA,PRUBL,PRUBA,total,observers,time_min,air,pH,water,DO,EC,TDS
 5/29/18,POPLICKTRIB,ref,1,NA,NA,1,0,0,0,0,1,4,0,0,7,1,0,0,13,"JB, DJH, NH",45,21.5,NA,13,NA,82.2,NA
 5/30/18,ALEX,res,1U,UP,-25,1,1,0,0,1,0,0,0,0,0,0,0,0,2,"JB, DJH",30,19.8,4.5,13.4,NA,30.1,15.4
 5/30/18,ALEX,res,2U,UP,-75,1,1,0,0,1,0,0,0,0,0,0,0,0,2,"JB, DJH",30,20.6,4.4,13.4,NA,30.7,15.1
