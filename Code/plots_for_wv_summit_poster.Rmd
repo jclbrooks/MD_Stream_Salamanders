@@ -1,0 +1,105 @@
+---
+title: "Plots for WV Herp Summit Poster"
+author: "Jacey Brooks"
+date: "September 30, 2018"
+output: pdf_document
+---
+
+
+# Graphs I would like to use 
+```{r read in}
+library(ggplot2)
+library(dplyr)
+
+sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+counts <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
+
+sal_means <- sal %>%
+  group_by(stream, transect, up_down, type) %>%
+  dplyr::select(-date, -observers, -visit) %>%
+  summarise_all(mean, na.rm = TRUE)
+
+sal_sds <- sal %>%
+  group_by(stream, type, transect, up_down) %>%
+  dplyr::select(-date, -observers, -visit) %>%
+  summarise_all(sd, na.rm = TRUE)
+
+#sal <- sal %>%
+ # mutate(type = ifelse(Type == "res", up_down, type))
+
+#counts <- counts %>%
+ # mutate()
+
+sal_type <- sal %>%
+  group_by(type) %>%
+  dplyr::select(-date,-observers, -visit) %>%
+  summarise_all(avg_count = colMeans(DFUSL,	DFUSA,	DOCHL,	DOCHA,	DMONL,	DMONA,	EBISL,	EBISA,	GPORL,	GPORA,	PRUBL,	PRUBA))
+```
+
+```{r counts}
+ggplot(data = counts, aes(x=species, y=total)) + 
+  geom_bar(data = NULL, stat= "identity", fill = "darkorange2")  + 
+  theme(axis.text.x = element_text(size = 9),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) +
+  ylab("Total Counts") +
+  xlab("Species") 
+ggplot(data = counts, aes(x=species, y = total)) + geom_boxplot(fill = "lightblue") + theme_classic()
+```
+
+# sal_means box or violin GPORL~type
+```{r a}
+ggplot(sal_means, aes(x = reorder(type, GPORL, FUN = mean), GPORL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, GPORL, FUN = mean), GPORL)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
+```
+
+# sal or sal_means box DMONA~type
+```{r b}
+ggplot(sal, aes(x = reorder(type, DMONA, FUN = mean), DMONA)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(type, DMONA, FUN = mean), DMONA)) + geom_boxplot(fill = "lightblue") + theme_bw()
+```
+
+# sal box EBISL~type
+```{r c}
+ggplot(sal, aes(x = reorder(type, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+```
+
+# sal or sal_means box EBISL~up_down
+```{r d}
+ggplot(sal, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+ggplot(sal_means, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) + geom_boxplot(fill = "lightblue") + theme_bw()
+```
+
+# line graphs looking at avg count ~ distance for each species
+# EBISL had a uptick in counts right after the sand dump, while DFUSA and DOCHA had a downtick
+# GPORL and DMONA had very little counts and thus no observable relationship other than the fact that counts were lower than the average for ref streams
+```{r e}
+ggplot(data = filter(sal_means, type != "ref"), aes(dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
+ggplot(data = filter(sal_means, type != "ref"), aes(dist, DOCHA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DOCHA"]), na.rm = TRUE)), colour = "red")
+ggplot(data = filter(sal_means, type != "ref"), aes(dist, DFUSA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DFUSA"]), na.rm = TRUE)), colour = "red")
+```
+
+# violin sal_means water temp~ type
+``` {r f}
+ggplot(sal_means, aes(x = reorder(type, water, FUN = median), water)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
+```
+
+# violin sal_means pH~type
+```{r g}
+ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
+```
+
+# box sal EC~up_down
+```{r h}
+ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "lightblue") + theme_bw()
+
+```
+
+
+
