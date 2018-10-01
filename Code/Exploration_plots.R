@@ -6,6 +6,7 @@
 # load packages
 library(ggplot2)
 library(dplyr)
+library(stringr)
 
 
 # read in data
@@ -90,6 +91,16 @@ sal_sds <- sal %>%
 
 print(sal_means, n = nrow(sal_means))
 print(sal_sds, n = 36)
+
+#sal_type <- sal %>%
+#  group_by(type) %>%
+#  dplyr::select(-date,-observers, -visit) %>%
+#  summarise(avg_count = colMeans(sal[,c(8:19)], na.rm = T))
+
+sal_sds <- sal %>%
+  group_by(type) %>%
+  dplyr::select(-date, -observers, -visit) %>%
+  summarise_all(avg_count = colMeans(DFUSL,	DFUSA,	DOCHL,	DOCHA,	DMONL,	DMONA,	EBISL,	EBISA,	GPORL,	GPORA,	PRUBL,	PRUBA), na.rm = TRUE)
 
 ######
 
