@@ -259,6 +259,20 @@ ggplot(sal_means, aes(x = reorder(up_down, DOCHA, FUN = mean), DOCHA)) + geom_vi
 # Something in dplyr??
 # ???  ggplot(sal_means, aes(x = reorder(counts, EBISL, FUN = mean), EBISL)) + facet_wrap(~type) + geom_boxplot(fill = "lightblue") + theme_bw()
 
+library(tidyr)
+
+foo <- sal_means[4:12]
+
+bar <- foo %>%
+  ungroup() %>%
+  gather(species, count, -type, -dist)
+
+ggplot(data = bar, aes(type, count)) + geom_boxplot() + facet_wrap(~species)
+
+ggplot(data = bar, aes(type, count)) + geom_boxplot() + facet_wrap(~species, scales = "free")
+
+ggplot(data = bar, aes(species, count)) + geom_boxplot() + facet_wrap(~type)
+
 ######
 
 
