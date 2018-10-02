@@ -10,8 +10,8 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
-counts <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
+sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+counts <- read.csv("Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
 
 sal_means <- sal %>%
   group_by(stream, transect, up_down, type) %>%
@@ -142,15 +142,19 @@ ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill
   ylim(0,150) +
   scale_x_discrete(labels = c('Upstream','Downstream','Reference'))
 
-food <- sal_means[,c(4,5,6,9,11,12,14)]
+food <- sal_means[,c(1, 2, 3,4,5,6,9,11,12,14)]
 
 bar <- food %>%
   ungroup() %>%
-  gather(species, count, -type, -dist)
+  select(-dist) %>%
+  gather(sp_stage, count, -type, -up_down, -transect, -stream) %>%
+  mutate(sp1 = gsub("(.{4})", "\\1.", sp_stage)) %>%
+  separate(col = sp1, into = c("species", "stage"))
 
 
-facet_labels <- c(`ref`="Reference", `res`="Restoration")
-ggplot(data = bar, aes(species, count)) + geom_boxplot(fill = "tan4") + facet_wrap(~type, labeller=as_labeller(facet_labels)) +
+
+facet_labels <- c(`A`="Adult", `L`="Larvae")
+ggplot(data = bar, aes(species, count, fill = up_down)) + geom_boxplot() + facet_wrap(~stage, labeller=as_labeller(facet_labels)) +
   theme(axis.text.x = element_text(size = 9),
         axis.text.y = element_text(size = 20),
         axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
@@ -164,7 +168,7 @@ ggplot(data = bar, aes(species, count)) + geom_boxplot(fill = "tan4") + facet_wr
         strip.background =element_rect(fill="tan4")) +
   ylim(0,12.5) +
   ylab("Average Counts") +
-  xlab("Species")
+  xlab("Species") # fill = "tan4"
 
   
 #ggplot(data = filter(sal_means, type != "ref"), aes(dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
