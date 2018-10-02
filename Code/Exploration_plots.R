@@ -97,10 +97,10 @@ print(sal_sds, n = 36)
 #  dplyr::select(-date,-observers, -visit) %>%
 #  summarise(avg_count = colMeans(sal[,c(8:19)], na.rm = T))
 
-sal_sds <- sal %>%
-  group_by(type) %>%
-  dplyr::select(-date, -observers, -visit) %>%
-  summarise_all(avg_count = colMeans(DFUSL,	DFUSA,	DOCHL,	DOCHA,	DMONL,	DMONA,	EBISL,	EBISA,	GPORL,	GPORA,	PRUBL,	PRUBA), na.rm = TRUE)
+sal_counts <- sal %>%
+  group_by(site, visit) %>%
+  dplyr::select(-date, -observers) %>%
+  summarise_all(mean, na.rm = TRUE)
 
 ######
 
@@ -272,6 +272,8 @@ ggplot(data = bar, aes(type, count)) + geom_boxplot() + facet_wrap(~species)
 ggplot(data = bar, aes(type, count)) + geom_boxplot() + facet_wrap(~species, scales = "free")
 
 ggplot(data = bar, aes(species, count)) + geom_boxplot() + facet_wrap(~type)
+
+ggplot(data = bar, aes(species, count)) + geom_boxplot() + facet_wrap(~type, scales = "free")
 
 ######
 

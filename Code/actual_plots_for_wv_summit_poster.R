@@ -8,6 +8,7 @@
 # Read-in data and data manipulation
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 
 sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 counts <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
@@ -30,7 +31,7 @@ sal_sds <- sal %>%
 
 # total counts
 ggplot(data = counts, aes(x=species, y=total)) + 
-  geom_bar(data = NULL, stat= "identity", fill = "darkorange2")  + 
+  geom_bar(data = NULL, stat= "identity", fill = "tan4")  + 
   theme(axis.text.x = element_text(size = 9),
         axis.text.y = element_text(size = 10),
         axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
@@ -45,11 +46,11 @@ ggplot(data = counts, aes(x=species, y=total)) +
 
 #sal_means boxplot EBISL~up_down
 ggplot(sal_means, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) + 
-  geom_boxplot(fill = "darkorange2") +
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+  geom_boxplot(fill = "tan4") +
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 18),
+        axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -60,11 +61,12 @@ ggplot(sal_means, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) +
   scale_x_discrete(labels = c('Upstream','Downstream','Reference'))
 
 #sal_means violin pH~type
-ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "darkorange2") + 
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+ggplot(sal_means, aes(x = reorder(up_down, pH, FUN = median), pH)) + 
+  geom_boxplot(draw_quantiles = c(0.25, 0.5, 0.75), fill = "tan4") + 
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -72,7 +74,8 @@ ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(dr
         panel.background = element_blank()) +
   ylab("pH") +
   xlab("Stream Type") +
-  scale_x_discrete(labels = c('Restoration','Reference'))
+  ylim(4,8) +
+  scale_x_discrete(labels = c('Up','Down','Reference'))
 
 
 
@@ -124,11 +127,11 @@ ggplot(sal_means, aes(x = reorder(type, pH, FUN = median), pH)) + geom_violin(dr
 #  xlab("pH")
 
 
-ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "darkorange2") + 
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "tan4") + 
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -136,10 +139,57 @@ ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill
         panel.background = element_blank()) +
   ylab("Electrical Conductivity (µS)") +
   xlab("Section of Stream") +
+  ylim(0,150) +
   scale_x_discrete(labels = c('Upstream','Downstream','Reference'))
 
-ggplot(data = filter(sal_means, type != "ref"), aes(dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
-ggplot(data = filter(sal_means, type != "ref"), aes(dist, DOCHA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DOCHA"]), na.rm = TRUE)), colour = "red")
-ggplot(data = filter(sal_means, type != "ref"), aes(dist, DFUSA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DFUSA"]), na.rm = TRUE)), colour = "red")
+food <- sal_means[,c(4,5,6,9,11,12,14)]
+
+bar <- food %>%
+  ungroup() %>%
+  gather(species, count, -type, -dist)
 
 
+facet_labels <- c(`ref`="Reference", `res`="Restoration")
+ggplot(data = bar, aes(species, count)) + geom_boxplot(fill = "tan4") + facet_wrap(~type, labeller=as_labeller(facet_labels)) +
+  theme(axis.text.x = element_text(size = 9),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 20, color = "white"),
+        strip.background =element_rect(fill="tan4")) +
+  ylim(0,12.5) +
+  ylab("Average Counts") +
+  xlab("Species")
+
+  
+#ggplot(data = filter(sal_means, type != "ref"), aes(dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
+#ggplot(data = filter(sal_means, type != "ref"), aes(dist, DOCHA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DOCHA"]), na.rm = TRUE)), colour = "red")
+#ggplot(data = filter(sal_means, type != "ref"), aes(dist, DFUSA)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "DFUSA"]), na.rm = TRUE)), colour = "red")
+
+#spec <- sal_means[1:18]
+
+#mat <- spec %>%
+#  ungroup() %>%
+#  gather(transect, visit, -dist)
+
+#mat <- mat %>%
+#  group_by(transect, visit) %>%
+#  summarise_all(mean, na.rm = T)
+
+#ggplot(data = mat, aes(type, count)) + geom_boxplot() + facet_wrap(~species)
+
+#sal_counts <- sal %>%
+#  group_by(transect, visit) %>%
+#  dplyr::select(-date, -observers) %>%
+#  summarise_all(mean, na.rm = TRUE)
+
+#ggplot(sal, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "darkorange2") + 
+#  theme_classic() +
+#  ylab("Electrical Conductivity (µS)") +
+#  xlab("Section of Stream") +
+#  scale_x_discrete(labels = c('Upstream','Downstream','Reference'))
