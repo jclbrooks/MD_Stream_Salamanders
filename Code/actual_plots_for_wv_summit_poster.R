@@ -9,6 +9,7 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(RColorBrewer)
 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 counts <- read.csv("Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
@@ -48,7 +49,7 @@ ggplot(data = counts, aes(x=species, y=total)) +
 ggplot(sal_means, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) + 
   geom_boxplot(fill = "tan4") +
   theme(axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 18),
+        axis.text.y = element_text(size = 20),
         axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
@@ -60,7 +61,7 @@ ggplot(sal_means, aes(x = reorder(up_down, EBISL, FUN = mean), EBISL)) +
   xlab("Section of Stream") +
   scale_x_discrete(labels = c('Upstream','Downstream','Reference'))
 
-#sal_means violin pH~type
+#sal_means boxplot pH~type
 ggplot(sal_means, aes(x = reorder(up_down, pH, FUN = median), pH)) + 
   geom_boxplot(draw_quantiles = c(0.25, 0.5, 0.75), fill = "tan4") + 
   theme(axis.text.x = element_text(size = 20),
@@ -154,8 +155,8 @@ bar <- food %>%
 
 
 facet_labels <- c(`A`="Adult", `L`="Larvae")
-ggplot(data = bar, aes(species, count, fill = up_down)) + geom_boxplot() + facet_wrap(~stage, labeller=as_labeller(facet_labels)) +
-  theme(axis.text.x = element_text(size = 9),
+ggplot(data = bar, aes(x = reorder(species, count, FUN = median), count, fill = up_down)) + geom_boxplot() + facet_wrap(~stage, labeller=as_labeller(facet_labels)) +
+  theme(axis.text.x = element_text(size = 13),
         axis.text.y = element_text(size = 20),
         axis.title.x = element_text(size = 22, margin = margin(t = 10, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(size = 22, margin = margin(t = 0, r = 10, b = 0, l = 0)),
@@ -168,7 +169,14 @@ ggplot(data = bar, aes(species, count, fill = up_down)) + geom_boxplot() + facet
         strip.background =element_rect(fill="tan4")) +
   ylim(0,12.5) +
   ylab("Average Counts") +
-  xlab("Species") # fill = "tan4"
+  xlab("Species") +
+  #scale_fill_brewer(palette = "OrRd") +
+  scale_fill_manual(values=c("tan4", "tan3", "tan2"),
+                   labels = c("Downstream", "Upstream", "Reference"),
+                   name = "Section\nof\nStream") +
+  scale_x_discrete(limits=c("DOCH", "DMON", "DFUS", "EBIS", "GPOR"))
+
+# fill = "tan4" 
 
   
 #ggplot(data = filter(sal_means, type != "ref"), aes(dist, EBISL)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = mean(unlist(sal_means[which(sal_means$type == "ref"), "EBISL"]), na.rm = TRUE)), colour = "red")
