@@ -1,0 +1,37 @@
+sink("Code/JAGS/min.txt")
+cat("
+model{
+# Priors
+for(s in 1:n_streams) {
+  a0[s] ~ dnorm(0, 1)
+}
+sigma_stream ~ dunif(0, 10) # switch to cauchy?
+
+a1 ~ dnorm(0, 0.25)
+a2 ~ dnorm(0, 0.25)
+
+b0 ~ dnorm(0, 0.111111)
+
+for(i in 1:n_transects) {
+  for(j in 1:n_visits) {
+    Z[i,j] ~ dnorm(0, 1)
+  }
+}
+sigma_p ~ dunif(0, 10) # change to cauchy or t?
+
+
+# likelihood
+for(i in 1:n_transects) {
+  N[i] ~ dpois(lambda[i])
+  log(lambda[i]) = a0[stream[i]] * sigma_stream + a1 * up[i] + a2 * down[i]
+  for(j in 1:n_visits) {
+    lp[i,j] <- b0 + Z[i,j] * sigma_p # b1 * temp[i,j] + b2 * precip[i,j] 
+    Count[i,j] ~ dbin(p[i,j], N[i])
+    p[i,j] <- 1 / (1 + exp(-lp.lim[i,j]))    
+    lp.lim[i,j] <- min(999, max(-999, lp[i,j])) # Help stabilize the logit
+  }
+}
+} # end model
+    ", fill = TRUE)
+sink()
+
