@@ -7,6 +7,10 @@ library(jagsUI)
 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
+library(lme4)
+glmm1 <- 
+
+
 doch_adult <- sal %>%
   group_by(stream, transect, visit) %>%
   select(stream, transect, visit, DOCHA) %>%
@@ -29,12 +33,12 @@ downstream <- sal %>%
 testing <- TRUE
 if(testing) {
   nb = 5000
-  ni = 1000 + nb
+  ni = 5000 + nb
   nt = 1
 } else {
   nb = 10000
   ni = 40000
-  nt = 16
+  nt = 10
 }
 
 n_transects <- nrow(doch_adult[ , 3:6])
@@ -50,12 +54,15 @@ doch_adult_data <- list(Count = as.matrix(doch_adult[ , 3:6]),
                      down = downstream$down)
 
 Nst <- apply(doch_adult[ , 3:6], 1, function(x) max(x, na.rm = TRUE)) + 1
+
+##### min model deterministic p #####
 inits <- function(){
   list(N = Nst,
-       a0 = rnorm(9, 0, 0.5),
+       a0 = rnorm(1, 0, 1),
        a1 = rnorm(1, -1, 0.5),
        a2 = rnorm(1, 0, 0.5),
        b0 = rnorm(1, 0, 0.5),
+       Z_N = rnorm(9, 0, 1),
        sigma_stream = runif(1, 0, 1),
        sigma_p = runif(1, 0, 1))
 }
@@ -63,11 +70,11 @@ inits <- function(){
 params <- c( "a0", 
              "a1", 
              "a2",
-             "b0",
              "sigma_stream",
-             "sigma_p",
+             "b0",
              "N",
-             "p")
+             "p",
+             "Z_N")
 
 out <- jags(data = doch_adult_data,
             inits = inits,
@@ -82,15 +89,65 @@ out <- jags(data = doch_adult_data,
             n.cores = 3)
 
 # Results
-summary(out)
 out
 plot(out, parameters = c("a0", 
                          "a1", 
                          "a2",
-                         "b0",
                          "sigma_stream",
+                         "b0"))
+
+if(!dir.exists("Results/JAGS")) dir.create("Results/JAGS", recursive = TRUE)
+save(out, file = "Results/JAGS/doch_adult_mcmc.RData")
+# saveRDS(pjor_od, file = "Results/JAGS/pjor_mcmc_out.rds")
+
+
+##### Min model with overdispersion in p #####
+inits <- function(){
+  list(N = Nst,
+       a0 = rnorm(1, 0, 1),
+       a1 = rnorm(1, -1, 0.5),
+       a2 = rnorm(1, 0, 0.5),
+       b0 = rnorm(1, 0, 0.5),
+       Z_N = rnorm(9, 0, 1),
+       sigma_stream = runif(1, 0, 1),
+       sigma_p = runif(1, 0, 1))
+}
+
+params <- c( "a0", 
+             "a1", 
+             "a2",
+             "sigma_stream",
+             "b0",
+             "sigma_p",
+             "N",
+             "p",
+             "Z_N",
+             "Z_p")
+
+out <- jags(data = doch_adult_data,
+            inits = inits,
+            parameters.to.save = params,
+            model.file = "Code/JAGS/min_od.txt",
+            n.chains = 3,
+            # n.adapt = 100,
+            n.iter = ni,
+            n.burnin = nb,
+            n.thin = nt, 
+            parallel = TRUE,
+            n.cores = 3)
+
+# Results
+out
+plot(out, parameters = c("a0", 
+                         "a1", 
+                         "a2",
+                         "sigma_stream",
+                         "b0",
                          "sigma_p"))
 
 if(!dir.exists("Results/JAGS")) dir.create("Results/JAGS", recursive = TRUE)
 save(out, file = "Results/JAGS/doch_adult_mcmc.RData")
 # saveRDS(pjor_od, file = "Results/JAGS/pjor_mcmc_out.rds")
+
+
+
