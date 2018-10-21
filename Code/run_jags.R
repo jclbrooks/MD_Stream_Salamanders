@@ -7,10 +7,6 @@ library(jagsUI)
 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
-library(lme4)
-glmm1 <- 
-
-
 doch_adult <- sal %>%
   group_by(stream, transect, visit) %>%
   select(stream, transect, visit, DOCHA) %>%
