@@ -29,29 +29,51 @@ df$obs <- df$count
 df[df$obs > 1 & !is.na(df$obs), "obs"] <- 1
 summary(df)
 
-# Reorganize so data in 3D array: site (j) x visit (k) x species (i) 
-n_species <- length(unique(df$species)) # I
-n_sites <- length(unique(sal$transect)) # J
-n_visits <- length(unique(sal$visit)) # K
-
-species_observed <- unique(df$species)
-
-occ_long <- df %>%
+# Reorganize so data in 4D array: site (j) x visit (k) x species (i) x stage (l)
+occ <- df %>%
   ungroup() %>%
-  group_by(transect, species, stage) %>%
-  select(transect, visit, species, stage, obs) %>%
+  group_by(trans, species, stage) %>%
+  select(trans, visit, species, stage, obs) %>%
+  mutate(visit = paste0("v", visit)) %>%
   spread(visit, obs) # not working
+str(occ)
+summary(occ)
+
+n_trans <- length(unique(occ$trans))
+n_species <- length(unique(df$species)) # I
+n_streams <- length(unique(sal$transect)) # J
+n_visits <- length(unique(sal$visit)) # K
+n_stages <- length(unique(occ$stage)) # L
+
+# Order everything the same way!!!!!!!!!
+occ <- occ %>%
+  arrange(stage, species, trans)
+str(occ)
 
 # need to figure out how to do this
-occ <- array(NA, dim = c(n_sites, n_visits, n_species))
-for(j in 1:n_sites) {
-  for(k in 1:n_visits) {
-    for(i in 1:n_species) {
-      occ[j, k, i] <- df$obs
-    }
-  }
-}
+occ_array <- array(NA, dim = c(n_trans, n_visits, n_species, n_stages))
 
+species_observed <- unique(df$species)
+transects <- unique(df$trans)
+stages <- unique(df$stage)
+
+foo <- occ[which(occ$species == species_observed[1] & occ$stage == stages[1]), c("v1", "v2", "v3", "v4")]
+
+# for(j in 1:n_sites) {
+  # for (k in 1:n_visits) {
+    for (i in 1:n_species) {
+      for (l in 1:n_stages) {
+        occ_array[1:n_trans, 1:n_visits, i, l] <- as.matrix(occ[which(occ$species == species_observed[i] & occ$stage == stages[l]), c("v1", "v2", "v3", "v4")])
+      }
+    }
+#   }
+# }
+str(occ_array)
+
+# print(xtabs(obs ~ trans + visit + species + stage, data = df, na.action = na.pass, addNA = TRUE), na.print = "NA") # doesn't seem to be handling visits and NA correctly
+# 
+# library(vcd)
+# structable(obs ~ trans + visit + species + stage, data = df) # nope
 
 # Read in covariate only data file
 cov<-read.csv("RubyToiyabeCovariates_15feb13.csv", header=TRUE) #covariate only file; make sure you first alphabetize by site A-Z in .csv 
