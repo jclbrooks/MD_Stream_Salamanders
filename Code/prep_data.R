@@ -70,80 +70,29 @@ foo <- occ[which(occ$species == species_observed[1] & occ$stage == stages[1]), c
 # }
 str(occ_array)
 
-# print(xtabs(obs ~ trans + visit + species + stage, data = df, na.action = na.pass, addNA = TRUE), na.print = "NA") # doesn't seem to be handling visits and NA correctly
-# 
-# library(vcd)
-# structable(obs ~ trans + visit + species + stage, data = df) # nope
 
-# Read in covariate only data file
-cov<-read.csv("RubyToiyabeCovariates_15feb13.csv", header=TRUE) #covariate only file; make sure you first alphabetize by site A-Z in .csv 
-head(cov)
-str(cov)
-
-
-# Create species (n=34) and site (n=72) lists
-(species.list <- levels(nevada$species))
-nspec<-length(species.list)
-nspec
-
-(site.list<-levels(nevada$site)) #this is site list of collapsed transects
-nsite<-length(site.list)
-nsite
-
-
-# Get covariates and standardize them; note use of second covariate data file
+# Organize covariates and standardize them
 # Site elevation
 
-elev <- cov$elev_GPS
-elev
-(mean.elev <- mean(elev, na.rm = TRUE))
-(sd.elev <- sd(elev, na.rm = TRUE))
-elev <- (elev - mean.elev) / sd.elev
-elev
-elev2<-elev*elev
+# Number of observed sites by each species among the transects
+obs_occ <- df %>%
+  ungroup() %>%
+  select(trans, visit, species, stage, obs) %>%
+  group_by(trans, species) %>%
+  summarise(obs = max(obs))
 
-#Site era; historical = 0; modern = 1
-era <-as.factor(cov$era)
-era
-
-#Site mtn; Ruby = 0; Toiyabe = 1
-mtn <-as.factor(cov$mtn)
-mtn
-
-#Trap number and trend vary by sites and rep
-trap <-cbind(cov$traps_day1, cov$traps_day2, cov$traps_day3, 
-             cov$traps_day4, cov$traps_day5)
-trap
+obs_occ <- obs_occ %>%
+  ungroup() %>%
+  group_by(species) %>%
+  summarise(obs_sites = sum(obs, na.rm = T))
+ n_trans 
+ 
+ obs_occ$prop_sites <- obs_occ$obs_sites / n_trans
+ obs_occ
+ 
+ # do the same for streams?
 
 
-trend <-cbind(cov$trend1, cov$trend2, cov$trend3, 
-              cov$trend4, cov$trend5)
-trend
-
-# Select count data for 5 reps; does not work with NA's; use zero instead
-OCC <-cbind(nevada$rep1, nevada$rep2, nevada$rep3, nevada$rep4, nevada$rep5)
-OCC
-
-#Convert counts to binary (detection/nondetection)
-OCC1 <- OCC # Make a copy 
-OCC1[OCC>1] <- 1 #convert counts to binary
-OCC1
-
-# Put detection data into 3D array: site (j) x rep (k) x species (i)
-A <- array(NA, dim = c(72, 5, 34))
-for(i in 1:34){
-  A[,,i] <- OCC1[((i-1)*72+1):(i*72),]
-}
-dimnames(A) <- list(site.list, NULL, species.list)
-nsite <- dim(A)[1]
-A   #A is now our three dimentional array of observed data
-
-
-
-# Number of occupied sites by this species among the 71 sites
-tmp <- apply(A, c(1,3), max, na.rm = TRUE)
-tmp
-(obs.occ <- apply(tmp, 2, sum, na.rm = TRUE))
 
 #convert 3D array to 2D to look at a naive occupancy matrix
 NaiveOcc <- matrix(NA, 72, 34)
