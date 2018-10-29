@@ -1,3 +1,4 @@
+#https://www.mbr-pwrc.usgs.gov/site/communitymodeling/software-code/
 #The model code below is written for program R and uses the R2WinBUGS package
 #to run WinBUGS as well as the reshape package to format the occurrence data.
 
@@ -7,7 +8,7 @@
 #The data are found in the file "occ data.csv".
 
 #Read in the occurence data
-data1 <- read.table("occ data.csv", header=TRUE,sep=",",na.strings=TRUE)
+data1 <- read.table("basic_MSOM_example/occ data.csv", header=TRUE,sep=",",na.strings=TRUE)
 data1$Occ <- rep(1, dim(data1)[1])
 #See the first ten lines of data
 data1[1:10,]
@@ -135,13 +136,13 @@ sp.params = list('u', 'v', 'mu.u', 'mu.v', 'tau.u', 'tau.v', 'omega', 'N')
                )
            }
 
-#Run the model and call the results “fit”
+#Run the model and call the results ?fit?
 fit = bugs(sp.data, sp.inits, sp.params, "basicmodel.txt", debug=TRUE,
          n.chains=3, n.iter=10000, n.burnin=5000, n.thin=5)
 
 
 #The model code below is written in the R language and designed to be run
-#after the “covariate model code” for summary of the model results
+#after the ?covariate model code? for summary of the model results
 
 #See a summary of the parameter estimates
 fit$summary
