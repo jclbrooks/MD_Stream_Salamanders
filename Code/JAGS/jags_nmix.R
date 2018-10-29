@@ -134,3 +134,15 @@ cat("
     }
     }
     ", fill=TRUE, file="com_occ.txt")
+
+
+# Formatting datafile to occupancy format
+
+sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+foo <- sal[ ,c(-(20:28))]
+
+#bar <- foo %>%
+ # ungroup() %>%
+  #select(-dist) %>%
+  #gather(count, -type, -up_down, -transect, -stream)
+head(bar)
