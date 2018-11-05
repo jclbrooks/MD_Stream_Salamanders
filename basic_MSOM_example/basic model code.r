@@ -88,8 +88,8 @@ for (i in 1:(n+nzeroes)) {
 
 #Create priors for species i from the community level prior distributions
     w[i] ~ dbern(omega)
-    u[i] ~ dnorm(mu.u, tau.u)
-    v[i] ~ dnorm(mu.v, tau.v)
+    u[i] ~ dnorm(mu.u, tau.u) # prob that species i occurs in the community on logit scale which varies normally among species
+    v[i] ~ dnorm(mu.v, tau.v) # prob that species i is detected on logit scale and varies normally among species
 
 #Create a loop to estimate the Z matrix (true occurrence for species i
 #at point j.

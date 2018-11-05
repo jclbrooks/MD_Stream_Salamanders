@@ -29,13 +29,13 @@ df$obs <- df$count
 df[df$obs > 1 & !is.na(df$obs), "obs"] <- 1
 summary(df)
 
-# Reorganize so data in 4D array: site (j) x visit (k) x species (i) x stage (l)
+# Reorganize so data in 4D array: transect (j) x visit (k) x species (i) x stage (l)
 occ <- df %>%
   ungroup() %>%
   group_by(trans, species, stage) %>%
   select(trans, visit, species, stage, obs) %>%
   mutate(visit = paste0("v", visit)) %>%
-  spread(visit, obs) # not working
+  spread(visit, obs) 
 str(occ)
 summary(occ)
 
@@ -57,7 +57,7 @@ species_observed <- unique(df$species)
 transects <- unique(df$trans)
 stages <- unique(df$stage)
 
-foo <- occ[which(occ$species == species_observed[1] & occ$stage == stages[1]), c("v1", "v2", "v3", "v4")]
+# foo <- occ[which(occ$species == species_observed[1] & occ$stage == stages[1]), c("v1", "v2", "v3", "v4")]
 
 # for(j in 1:n_sites) {
   # for (k in 1:n_visits) {

@@ -1,4 +1,6 @@
-sink("Code/JAGS/min_od.txt")
+
+# Abundance model
+sink("Code/JAGS/abund.txt")
 cat("
 model{
 # Priors
@@ -37,6 +39,7 @@ for(i in 1:n_transects) {
 sink()
 
 
+# Abundance model
 sink("Code/JAGS/min.txt")
 cat("
     model{
