@@ -7,6 +7,19 @@ library(tidyr)
 library(ggplot2)
 library(jagsUI)
 
+blankPlot <- ggplot()+geom_blank(aes(1,1))+
+  theme(plot.background = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()
+  )
+
 # Read in data set and look at data 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 str(sal)  # structure of the data
@@ -164,16 +177,16 @@ cat("
     }
     
     #HYPERPRIORS
-    mu.b0 ~ dnorm(0, 0.001)    
+    mu.b0 ~ dnorm(0, 0.01)    
     tau.b0 ~ dgamma(0.1, 0.1)
     
-    mu.b1 ~ dnorm(0,0.001)
+    mu.b1 ~ dnorm(0, 0.01)
     tau.b1 ~ dgamma(0.1, 0.1)
     
-    mu.a0 ~ dnorm(0,0.001)
+    mu.a0 ~ dnorm(0, 0.01)
     tau.a0 ~ dgamma(0.1, 0.1)
     
-    mu.a1 ~ dnorm(0,0.001)
+    mu.a1 ~ dnorm(0, 0.01)
     tau.a1 ~ dgamma(0.1, 0.1)
     
 # array transect (j) x visit (k) x species (i) x stage (l)
@@ -198,16 +211,34 @@ cat("
     }
     }
     
-    ######Derived quantities #######
+    ###### Derived quantities #######
     
     
-    # for(i in 1:nspec){
-    # occ.sp[i]<-sum(Z[,i])        #Number of occupied sites by this species among the 72
-    # }
-    # for(j in 1:nsite){
-    # occ.site[j]<-sum(Z[j,])      #Number of occurring species at each site
-    # }                    
-    
+    for(i in 1:n_species) {
+      for(j in 1:n_trans) {
+        occ_spp_stage[j, i] <- max(Z[ j, i, ])
+    }
+    occ_sp[i] <- sum(occ_spp_stage[ , i])        # Number of occupied transects by this species
+    }
+
+    for(j in 1:n_trans) {
+      for(i in 1:n_species) {
+        occ_trans_sp[j, i] <- max(Z[j, i, ])
+      }
+      occ_trans[j] <- sum(occ_trans_sp[j, ])      # Number of occurring species at each transect
+    }
+
+# mean detection by species and stage
+for(i in 1:n_species) {
+  for(l in 1:n_stages) {
+    p_sp[i, l] <- sum(p[ , , i, l])
+  }
+}
+
+# overall mean detection
+    p_mean <- mean(p)
+
+
     }
     ", fill=TRUE)
 sink()
@@ -223,7 +254,7 @@ inits<-function()
 
 
 #Parameters monitored
-params <-c('p', 'Z', 'psi', 'a0','a1', 'b0','b1')
+params <-c('p', 'Z', 'psi', 'a0','a1', 'b0','b1', "mu.b0", "tau.b0", "mu.a0", "tau.a0", "mu.b1", "tau.b1", "mu.a1", "tau.a1", "occ_sp", "occ_trans", "p_mean")
 
 
 # MCMC settings
@@ -240,10 +271,85 @@ library(jagsUI)
 
 out <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ.txt", 
             n.chains = nc,
-            n.adapt = nb,
+            n.burnin = nb,
             n.iter = ni,
             parallel = TRUE,
-            n.cores = nc)
+            bugs.format = TRUE)
+
+summary(out, parameters = c("mu.b0", "tau.b0", "mu.b1", "tau.b1", "mu.a0", "tau.a0", "mu.a1", "tau.a1"))
+
+traceplot(out, parameters = c("a0", "b0"))
+
+traceplot(out, parameters = c("mu.b0", "tau.b0", "mu.a0", "tau.a0"))
+whiskerplot(out, parameters = c("mu.b0", "tau.b0", "mu.b1", "tau.b1", "mu.a0", "tau.a0", "mu.a1", "tau.a1"))
+whiskerplot(out, parameters = c("p_mean"))
+whiskerplot(out, parameters = c("b1")) # effects of pH by species
+whiskerplot(out, parameters = c("occ_sp")) # number of transects occupied by each species
+whiskerplot(out, parameters = c("occ_trans")) # number of species per transect
+
+post <- data.frame(group = "posterior", mu.b0 = out$sims.list$mu.b0, tau.b0 = out$sims.list$tau.b0, stringsAsFactors = FALSE)
+
+prior <- data.frame(group = "prior", mu.b0 = rnorm(nrow(post), 0, sqrt(1/0.001)), tau.b0 = rgamma(nrow(post), 0.1, 0.1), stringsAsFactors = FALSE)
+
+library(dplyr)
+prior_post <- bind_rows(prior, post)
+
+# http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization
+
+scatterPlot <- ggplot(prior_post, aes(mu.b0, tau.b0, color = group)) + 
+  geom_point(alpha = 0.3) + 
+  # scale_color_manual(values = c('#999999','#E69F00')) + 
+  theme(legend.position=c(0,1), legend.justification=c(0,1))
+scatterPlot
+# Marginal density plot of x (top panel)
+xdensity <- ggplot(prior_post, aes(mu.b0, fill=group)) + 
+  geom_density(alpha=.5) + 
+  # scale_fill_manual(values = c('#999999','#E69F00')) + 
+  coord_cartesian(xlim = c(-25, 25)) +
+  theme(legend.position = "none")
+xdensity
+# Marginal density plot of y (right panel)
+ydensity <- ggplot(prior_post, aes(tau.b0, fill=group)) + 
+  geom_density(alpha=.5) + 
+  # scale_fill_manual(values = c('#999999','#E69F00')) + 
+  coord_cartesian(xlim = c(0, 20), ylim = c(0, 0.5))
+ydensity
+ydensity <- ydensity + theme(legend.position = "none")
+
+library("gridExtra")
+grid.arrange(xdensity, blankPlot, scatterPlot, ydensity, 
+             ncol=2, nrow=2, widths=c(4, 1.4), heights=c(1.4, 4))
+
+#------- plot effect of pH ------
+post <- data.frame(group = "posterior", mu.b1 = out$sims.list$mu.b1, tau.b1 = out$sims.list$tau.b1, stringsAsFactors = FALSE)
+
+prior <- data.frame(group = "prior", mu.b1 = rnorm(nrow(post), 0, sqrt(1/0.001)), tau.b1 = rgamma(nrow(post), 0.1, 0.1), stringsAsFactors = FALSE)
+
+prior_post <- bind_rows(prior, post)
+
+scatterPlot <- ggplot(prior_post, aes(mu.b1, tau.b1, color = group)) + 
+  geom_point(alpha = 0.3) + 
+  # scale_color_manual(values = c('#999999','#E69F00')) + 
+  theme(legend.position=c(0,1), legend.justification=c(0,1))
+scatterPlot
+# Marginal density plot of x (top panel)
+xdensity <- ggplot(prior_post, aes(mu.b1, fill=group)) + 
+  geom_density(alpha=.5) + 
+  # scale_fill_manual(values = c('#999999','#E69F00')) + 
+  coord_cartesian(xlim = c(-25, 25)) +
+  theme(legend.position = "none")
+xdensity
+# Marginal density plot of y (right panel)
+ydensity <- ggplot(prior_post, aes(tau.b1, fill=group)) + 
+  geom_density(alpha=.5) + 
+  # scale_fill_manual(values = c('#999999','#E69F00')) + 
+  coord_cartesian(xlim = c(0, 20), ylim = c(0, 0.5))
+ydensity
+ydensity <- ydensity + theme(legend.position = "none")
+
+grid.arrange(xdensity, blankPlot, scatterPlot, ydensity, 
+             ncol=2, nrow=2, widths=c(4, 1.4), heights=c(1.4, 4))
+
 
 #?jags.model
 #library(parallel)
@@ -272,12 +378,12 @@ out <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/mul
 
 #################################################################
 #Alternative option to Call JAGS from R using R2JAGS
-start.time<-Sys.time()
-outj<-jags(data=win.data, inits=inits, parameters.to.save=params, model.file="modelRubyToiyabeMultiSP.txt",
-           n.chains=nc, n.iter=ni, n.burnin=nb, n.thin=nt, DIC=FALSE)
-end.time=Sys.time()
-elapsed.time = difftime(end.time, start.time, units='mins')
-elapsed.time
+# start.time<-Sys.time()
+# outj<-jags(data=win.data, inits=inits, parameters.to.save=params, model.file="modelRubyToiyabeMultiSP.txt",
+#            n.chains=nc, n.iter=ni, n.burnin=nb, n.thin=nt, DIC=FALSE)
+# end.time=Sys.time()
+# elapsed.time = difftime(end.time, start.time, units='mins')
+# elapsed.time
 
 
 
