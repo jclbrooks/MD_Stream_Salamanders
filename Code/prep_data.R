@@ -19,7 +19,8 @@ df <- sal %>%
   group_by(trans, stream, transect, visit) %>%
   tidyr::gather(sp_stage, count, -date, -trans, - stream, -transect, -type, -up_down, -dist, -visit, -time_min, -air, -water, -pH, -DO, -EC, -TDS, -observers) %>%
   tidyr::separate(sp_stage, into = c("species", "stage"), sep = 4) %>%
-  filter(species != "tota")
+  filter(species != "tota") %>%
+  mutate(type = ifelse(type == "res", up_down, type))
 str(df)
 
 # Combine across life stages?
@@ -28,6 +29,20 @@ str(df)
 df$obs <- df$count
 df[df$obs > 1 & !is.na(df$obs), "obs"] <- 1
 summary(df)
+
+# Transect-level covariates
+df_trans <- df %>%
+  ungroup() %>%
+  group_by(trans) %>%
+  select(trans, visit, species, stage, obs, pH) %>%
+  summarise(pH = mean(pH, na.rm = TRUE)) %>%
+  arrange(trans) %>%
+  ungroup()
+
+df_trans <- left_join(df_trans, distinct(df[ , c("trans", "type")]))
+df_trans <- df_trans %>%
+  mutate(up = ifelse(type == "UP", 1, 0),
+         down = ifelse(type == "DOWN", 1, 0))
 
 # Reorganize so data in 4D array: transect (j) x visit (k) x species (i) x stage (l)
 occ <- df %>%
@@ -70,9 +85,23 @@ stages <- unique(df$stage)
 # }
 str(occ_array)
 
+# Detection Covariates (vary by transect-visit)
+df$time <- ifelse(df$time_min == 0, 60, df$time_min)
+
+time_min <- df %>%
+  ungroup() %>%
+  group_by(trans, visit) %>%
+  select(trans, visit, time) %>%
+  summarise(time = mean(time, na.rm = TRUE)) %>%
+  mutate(visit = paste0("v", visit),
+         time = scale(time)) %>%
+  spread(visit, time, fill = 0) %>%
+  ungroup()
+str(time_min)
+summary(time_min)
 
 # Organize covariates and standardize them
-# Site elevation
+df_trans$pH_s <- scale(df_trans$pH)
 
 # Number of observed sites by each species among the transects
 obs_occ <- df %>%
@@ -92,21 +121,21 @@ obs_occ <- obs_occ %>%
  
  # do the same for streams?
 
+#convert 4D array to 3D to look at a naive occupancy array transect (j) x visit (k) x species (i) x stage (l)
+NaiveOcc <- array(NA, dim = c(n_trans, n_species, n_stages))
 
-
-#convert 3D array to 2D to look at a naive occupancy matrix
-NaiveOcc <- matrix(NA, 72, 34)
-for(i in 1:34){
-  NaiveOcc[,i] <- apply(A[,,i], MARGIN=1, max, na.rm = TRUE) 
+for (i in 1:n_species) {
+  for (l in 1:n_stages) {
+    NaiveOcc[,i,l] <- apply(occ_array[,,i,l], MARGIN=1, max, na.rm = TRUE) 
+  }
 }
 NaiveOcc
 
-
 # Get observed species richness; Naive number of occurring species at each site
-obs.rich <- apply(NaiveOcc, 1, sum, na.rm = TRUE)
-obs.rich
-names(obs.rich) <- dimnames(A)[[1]]
-(sort(obs.rich))
+# obs.rich <- apply(NaiveOcc, 1, sum, na.rm = TRUE)
+# obs.rich
+# names(obs.rich) <- dimnames(A)[[1]]
+# (sort(obs.rich))
 
 #BUILD IN TO CHECK THERE ARE 34 SPECIES AT EACH SITE
 
@@ -115,57 +144,31 @@ names(obs.rich) <- dimnames(A)[[1]]
 #################
 
 #Bundle data (Note you may need to change nsite, nrep, nspec)
-win.data = list(X=A, nsite=72, nrep=5, nspec=34,
-                elev=elev, elev2=elev2, era=era, trap=trap, trend=trend, mtn=mtn)
+data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_species = n_species, n_stages = n_stages,
+                pH = df_trans$pH_s, time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
 
-
-## Write model code (based off of Morgan's Ecology paper and USGS workshop pg. 30)
-sink("modelRubyToiyabeMultiSP_10jun14.txt")
+sink("Code/JAGS/multi_spp_occ.txt")
 cat("
     model {
     
     #PRIORS
     
-    
     # Set species loop
-    for(i in 1:nspec){
+    for(i in 1:n_species) {
     
-    b0[i] ~ dnorm(mu.b0, tau.b0) #Hyperparams
+    b0[i] ~ dnorm(mu.b0, tau.b0)
     b1[i] ~ dnorm(mu.b1, tau.b1)
-    b2[i] ~ dnorm(mu.b2, tau.b2)
-    b3[i] ~ dnorm(mu.b3, tau.b3)
-    b4[i] ~ dnorm(mu.b4, tau.b4)
-    b5[i] ~ dnorm(mu.b5, tau.b5)
-    b6[i] ~ dnorm(mu.b6, tau.b6)
+
     a0[i] ~ dnorm(mu.a0, tau.a0)
     a1[i] ~ dnorm(mu.a1, tau.a1)
-    a2[i] ~ dnorm(mu.a2, tau.a2)
-    a3[i] ~ dnorm(mu.a3, tau.a3)
-    
-    
     }
     
     #HYPERPRIORS
-    mu.b0 ~ dnorm(0,0.001)     #Narrower prior to avoid WinBUGS 'undef real result'
+    mu.b0 ~ dnorm(0, 0.001)    
     tau.b0 ~ dgamma(0.1, 0.1)
     
     mu.b1 ~ dnorm(0,0.001)
     tau.b1 ~ dgamma(0.1, 0.1)
-    
-    mu.b2 ~ dnorm(0,0.001)
-    tau.b2 ~ dgamma(0.1, 0.1)
-    
-    mu.b3 ~ dnorm(0,0.001)
-    tau.b3 ~ dgamma(0.1, 0.1)
-    
-    mu.b4 ~ dnorm(0,0.001)
-    tau.b4 ~ dgamma(0.1, 0.1)
-    
-    mu.b5 ~ dnorm(0,0.001)
-    tau.b5 ~ dgamma(0.1, 0.1)
-    
-    mu.b6 ~ dnorm(0,0.001)
-    tau.b6 ~ dgamma(0.1, 0.1)
     
     mu.a0 ~ dnorm(0,0.001)
     tau.a0 ~ dgamma(0.1, 0.1)
@@ -173,81 +176,77 @@ cat("
     mu.a1 ~ dnorm(0,0.001)
     tau.a1 ~ dgamma(0.1, 0.1)
     
-    mu.a2 ~ dnorm(0,0.001)
-    tau.a2 ~ dgamma(0.1, 0.1)
-    
-    mu.a3 ~ dnorm(0,0.001)
-    tau.a3 ~ dgamma(0.1, 0.1)
-    
-    
+# array transect (j) x visit (k) x species (i) x stage (l)
     # Estimation of Z matrix (true occurrence for species i at site j)	
-    for(i in 1:nspec){	
-    for (j in 1:nsite){ 
-    logit(psi[j,i]) <-   b0[i]+
-    b1[i]*elev[j]+
-    b2[i]*elev2[j]+
-    b3[i]*era[j]+
-    b4[i]*era[j]*elev[j]+
-    b5[i]*era[j]*elev2[j]+
-    b6[i]*mtn[j]
-    Z[j,i] ~ dbern(psi[j,i])
+    for(i in 1:n_species) {	
+      for(j in 1:n_trans) { 
+        for(l in 1:n_stages) {
+    logit(psi[j,i,l]) <- b0[i] + b1[i]*pH[j]
+
+    Z[j,i,l] ~ dbern(psi[j,i,l])
+    
+    # Estimate detection for species i and stage k at transect j during visit k
+    for (k in 1:n_visits) {
+    logit(p[j,k,i,l]) <- a0[i] + a1[i] * time_min[j, k]
     
     
-    # Estimate detection for species i at site j during sampling period k
-    for (k in 1:nrep) {
-    logit(p[j,k,i]) <- a0[i]+
-    a1[i]*era[j]+
-    a2[i]*trend[j,k]+
-    a3[i]*trap[j,k]
-    
-    
-    
-    mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
-    X[j,k,i] ~ dbern(mu.p[j,k,i])
+    mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i]
+    y[j,k,i,l] ~ dbern(mu.p[j,k,i,l])
     
     }
     }
     }
-    
+    }
     
     ######Derived quantities #######
     
     
-    for(i in 1:nspec){
-    occ.sp[i]<-sum(Z[,i])        #Number of occupied sites by this species among the 72
-    }
-    for(j in 1:nsite){
-    occ.site[j]<-sum(Z[j,])      #Number of occurring species at each site
-    }                    
+    # for(i in 1:nspec){
+    # occ.sp[i]<-sum(Z[,i])        #Number of occupied sites by this species among the 72
+    # }
+    # for(j in 1:nsite){
+    # occ.site[j]<-sum(Z[j,])      #Number of occurring species at each site
+    # }                    
     
     }
-    
-    ",fill=TRUE)
+    ", fill=TRUE)
 sink()
 
 #INITIAL VALUES
-zst<-apply(A, c(1,3), max) #observed occurrence as starting values for Z
-zst[is.na(zst)]<-1
+# zst<-apply(A, c(1,3), max) #observed occurrence as starting values for Z
+# zst[is.na(zst)]<-1
+
+zst <- NaiveOcc
+
 inits<-function() 
-  list(Z=zst)
+  list(Z = zst)
 
 
 #Parameters monitored
-params <-c('p', 'Z', 'psi', 'a0','a1', 'a2', 'a3', 'b0','b1', 'b2', 'b3', 'b4', 'b5','b6', 'occ.sp', 'occ.site')
+params <-c('p', 'Z', 'psi', 'a0','a1', 'b0','b1')
 
 
 # MCMC settings
 saved.per.chain <- 1000
 nc <- 3         #num. chains (this is a standard number of chains)
-nb <- 200000    #burn-in; draws from Markov chain that are discarded
-nt <- 100        #thin chains to save diskspace / reduce autocorrelation among repeated draws
+nb <- 200    #burn-in; draws from Markov chain that are discarded
+nt <- 1        #thin chains to save diskspace / reduce autocorrelation among repeated draws
 ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
 
 ###################################################################
 #Call JAGS from R using rjags and setup to run on multiple cores
 
-#?jags.model
+library(jagsUI)
 
+out <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ.txt", 
+            n.chains = nc,
+            n.adapt = nb,
+            n.iter = ni,
+            parallel = TRUE,
+            n.cores = nc)
+
+#?jags.model
+#library(parallel)
 #cl <- makeCluster(3)                       # Request 3 cores
 #clusterExport(cl, c("win.data", "inits", "params")) # Make these available
 #clusterSetRNGStream(cl = cl, 6572)
