@@ -145,7 +145,7 @@ NaiveOcc
 
 #Bundle data (Note you may need to change nsite, nrep, nspec)
 data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_species = n_species, n_stages = n_stages,
-                pH = df_trans$pH_s, time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
+                pH = as.numeric(df_trans$pH_s), time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
 
 sink("Code/JAGS/multi_spp_occ.txt")
 cat("
@@ -190,7 +190,7 @@ cat("
     logit(p[j,k,i,l]) <- a0[i] + a1[i] * time_min[j, k]
     
     
-    mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i]
+    mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i,l]
     y[j,k,i,l] ~ dbern(mu.p[j,k,i,l])
     
     }
