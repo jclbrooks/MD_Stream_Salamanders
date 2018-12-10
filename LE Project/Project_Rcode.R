@@ -95,6 +95,7 @@ plot(mdshp,
 
 # Formatting data
 DFUSvec <- as.vector(DFUSloc$DFUS)
+DFUSvec[1] <- 1.0
 # coordinates(DFUSloc) <- c("Longitude8", "Latitude83")
 # projection(DFUSloc) <- crs.geo
 # projection(DFUSloc)
