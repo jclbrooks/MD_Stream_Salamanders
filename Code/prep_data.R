@@ -47,8 +47,11 @@ summary(df)
 df_trans <- df %>%
   ungroup() %>%
   group_by(trans) %>%
-  select(trans, visit, species, stage, obs, pH) %>%
-  summarise(pH = mean(pH, na.rm = TRUE)) %>%
+  select(trans, visit, species, stage, obs, pH, air, water, EC) %>%
+  summarise(pH = mean(pH, na.rm = TRUE),
+            air = mean(air, na.rm = TRUE),
+            water = mean(water, na.rm = TRUE),
+            EC = mean(EC, na.rm = TRUE)) %>%
   arrange(trans) %>%
   ungroup()
 
@@ -113,8 +116,22 @@ time_min <- df %>%
 str(time_min)
 summary(time_min)
 
+water <- df %>%
+  ungroup() %>%
+  group_by(trans, visit) %>%
+  select(trans, visit, water) %>%
+  summarise(water = mean(water, na.rm = TRUE)) %>%
+  mutate(visit = paste0("v", visit),
+         water = scale(water)) %>%
+  spread(visit, water, fill = 0) %>%
+  ungroup()
+str(water)
+summary(water)
+
 # Organize covariates and standardize them
 df_trans$pH_s <- scale(df_trans$pH)
+df_trans$air_s <- scale(df_trans$air)
+df_trans$ec_s <- scale(df_trans$EC)
 
 # Number of observed sites by each species among the transects
 obs_occ <- df %>%
@@ -158,9 +175,15 @@ NaiveOcc
 
 #Bundle data (Note you may need to change nsite, nrep, nspec)
 data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_species = n_species, n_stages = n_stages,
-                pH = as.numeric(df_trans$pH_s), time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
+                pH = as.numeric(df_trans$pH_s), 
+                air = as.numeric(df_trans$air_s),
+                ec = as.numeric(df_trans$ec_s),
+                water = as.matrix(select(water, v1, v2, v3, v4)),
+                time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
 
-sink("Code/JAGS/multi_spp_occ.txt")
+########################################################
+# MSOM pH and time_min
+sink("Code/JAGS/multi_spp_occ1.txt")
 cat("
     model {
     
@@ -243,6 +266,104 @@ for(i in 1:n_species) {
     ", fill=TRUE)
 sink()
 
+
+########################################################
+# MSOM - beta1: ec , alpha1: water
+sink("Code/JAGS/multi_spp_occ2.txt")
+cat("
+    model {
+    
+    #PRIORS
+    
+    # Set species loop
+    for(i in 1:n_species) {
+    
+    b0[i] ~ dnorm(mu.b0, tau.b0)
+    b1[i] ~ dnorm(mu.b1, tau.b1)
+
+    a0[i] ~ dnorm(mu.a0, tau.a0)
+    a1[i] ~ dnorm(mu.a1, tau.a1)
+    }
+    
+    #HYPERPRIORS
+    mu.b0 ~ dnorm(0, 0.01)    
+    tau.b0 ~ dgamma(0.1, 0.1)
+    
+    mu.b1 ~ dnorm(0, 0.01)
+    tau.b1 ~ dgamma(0.1, 0.1)
+    
+    mu.a0 ~ dnorm(0, 0.01)
+    tau.a0 ~ dgamma(0.1, 0.1)
+    
+    mu.a1 ~ dnorm(0, 0.01)
+    tau.a1 ~ dgamma(0.1, 0.1)
+    
+# array transect (j) x visit (k) x species (i) x stage (l)
+    # Estimation of Z matrix (true occurrence for species i at site j)	
+    for(i in 1:n_species) {	
+      for(j in 1:n_trans) { 
+        for(l in 1:n_stages) {
+    logit(psi[j,i,l]) <- b0[i] + b1[i]*ec[j]
+
+    Z[j,i,l] ~ dbern(psi[j,i,l])
+    
+    # Estimate detection for species i and stage k at transect j during visit k
+    for (k in 1:n_visits) {
+    logit(p[j,k,i,l]) <- a0[i] + a1[i] * water[j, k]
+    
+    
+    mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i,l]
+    y[j,k,i,l] ~ dbern(mu.p[j,k,i,l])
+    
+    }
+    }
+    }
+    }
+    
+    ###### Derived quantities #######
+    
+    
+    for(i in 1:n_species) {
+      for(j in 1:n_trans) {
+        occ_spp_stage[j, i] <- max(Z[ j, i, ])
+    }
+    occ_sp[i] <- sum(occ_spp_stage[ , i])        # Number of occupied transects by this species
+    }
+
+    for(j in 1:n_trans) {
+      for(i in 1:n_species) {
+        occ_trans_sp[j, i] <- max(Z[j, i, ])
+      }
+      occ_trans[j] <- sum(occ_trans_sp[j, ])      # Number of occurring species at each transect
+    }
+
+# mean detection by species and stage
+for(i in 1:n_species) {
+  for(l in 1:n_stages) {
+    p_sp[i, l] <- sum(p[ , , i, l])
+  }
+}
+
+# overall mean detection
+    p_mean <- mean(p)
+
+
+    }
+    ", fill=TRUE)
+sink()
+
+
+
+
+
+
+
+
+
+
+
+
+##########################################################
 #INITIAL VALUES
 # zst<-apply(A, c(1,3), max) #observed occurrence as starting values for Z
 # zst[is.na(zst)]<-1
@@ -269,12 +390,14 @@ ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
 
 library(jagsUI)
 
-out <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ.txt", 
+out1 <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ2.txt", 
             n.chains = nc,
             n.burnin = nb,
             n.iter = ni,
             parallel = TRUE,
             bugs.format = TRUE)
+
+out <- out1
 
 summary(out, parameters = c("mu.b0", "tau.b0", "mu.b1", "tau.b1", "mu.a0", "tau.a0", "mu.a1", "tau.a1"))
 
