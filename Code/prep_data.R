@@ -181,6 +181,16 @@ data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_specie
                 water = as.matrix(select(water, v1, v2, v3, v4)),
                 time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
 
+# tmp to check problems 
+ec_s2 <- df_trans$ec_s
+ec_s2[is.na(ec_s2)] <- 0
+data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_species = n_species, n_stages = n_stages,
+                pH = as.numeric(df_trans$pH_s), 
+                air = as.numeric(df_trans$air_s),
+                ec = as.numeric(ec_s2),
+                water = as.matrix(select(water, v1, v2, v3, v4)),
+                time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
+
 ########################################################
 # MSOM pH and time_min
 sink("Code/JAGS/multi_spp_occ1.txt")
