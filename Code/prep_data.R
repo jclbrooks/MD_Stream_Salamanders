@@ -68,7 +68,7 @@ occ <- df %>%
   mutate(visit = paste0("v", visit)) %>%
   spread(visit, obs) 
 str(occ)
-headsummary(occ)
+head(occ)
 
 n_trans <- length(unique(occ$trans))
 n_species <- length(unique(df$species)) # I
@@ -140,7 +140,7 @@ obs_occ <- df %>%
   group_by(trans, species) %>%
   summarise(obs = max(obs))
 
-obs_occ <- obs_occ  
+obs_occ <- obs_occ %>% 
   ungroup() %>%
   group_by(species) %>%
   summarise(obs_sites = sum(obs, na.rm = T))
