@@ -18,3 +18,4 @@ can <- canaan %>%
   mutate(Pass = paste0("p", Pass)) %>%
   spread(Pass, Caught)
   
+#addd 
