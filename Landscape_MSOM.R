@@ -17,5 +17,11 @@ can <- canaan %>%
   select(Transect, Pass, Species, Age, Caught) %>%
   mutate(Pass = paste0("p", Pass)) %>%
   spread(Pass, Caught)
+
+# # can <- canaan %>%
+#   mutate(Transect = paste(Name, Transect, Year, sep = "_")) %>%
+#   group_by(Transect, Species, Age) %>%
+#   select(Transect, Pass, Species, Age, Caught) %>%
+#   mutate(Pass = paste0("p", Pass)) %>%
+#   spread(Pass, Caught)
   
-#addd 
