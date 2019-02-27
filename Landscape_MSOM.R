@@ -35,14 +35,20 @@ colnames(cap) <- c("transect", "species", "age", "pass1", "pass2", "pass3", "pas
 # add_count(shenandoah, name = "count")
 
 she <- shenandoah  %>%
-  group_by(Site, Species, Age) %>%
-  select(Site, Species, Age, Pass, count) %>%
+  group_by(Site, Species, Age, Pass) %>%
+  select(Site, Species, Age, Pass) %>%
+  summarise(count = n()) %>%
   mutate(Pass = paste0("pass", Pass)) %>%
   spread(Pass, count)
 # shenandoah[452,]
 # shenandoah[453,]
 # shenandoah[467,]
 # shenandoah$X.
+
+max_pass <- shenandoah  %>%
+  group_by(Site, Date) %>%
+  summarise(max_pass = max(Pass, na.rm = TRUE))
+
 
 # Remove NULLs from capitals data
 na <- cap[which(cap$species == "NULL"),]

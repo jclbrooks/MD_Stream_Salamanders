@@ -27,8 +27,8 @@
     tau.b1 ~ dgamma(0.1, 0.1)
     
     mu.a0 ~ dnorm(0, 0.01)
-     sigma.p ~ dunif(0, 5)
-    # sigma.p ~ dt(0, pow(1, -2), 1)T(0, ) # half cauchy with sd = 1 # informative prior pulling things close to the center
+    # sigma.p ~ dunif(0, 10)
+    sigma.p ~ dt(0, pow(5, -2), 1)T(0, ) # half cauchy with sd = 1 # informative prior pulling things close to the center
     tau.a0 <- 1 / sigma.p / sigma.p
     # tau.a0 ~ dgamma(0.1, 0.1)
     var.p <- tau.b0 / (1.-pow(rho, 2))

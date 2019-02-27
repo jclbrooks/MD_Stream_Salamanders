@@ -400,8 +400,8 @@ cat("
     tau.b1 ~ dgamma(0.1, 0.1)
     
     mu.a0 ~ dnorm(0, 0.01)
-     sigma.p ~ dunif(0, 5)
-    # sigma.p ~ dt(0, pow(1, -2), 1)T(0, ) # half cauchy with sd = 1 # informative prior pulling things close to the center
+    sigma.p ~ dunif(0, 10)
+    # sigma.p ~ dt(0, pow(5, -2), 1)T(0, ) # half cauchy with sd = 1 # informative prior pulling things close to the center
     tau.a0 <- 1 / sigma.p / sigma.p
     # tau.a0 ~ dgamma(0.1, 0.1)
     var.p <- tau.b0 / (1.-pow(rho, 2))
@@ -489,11 +489,20 @@ params <-c('p', 'Z', 'psi', 'a0','a1', 'b0','b1', "mu.b0", "tau.b0", "mu.a0", "t
 
 
 # MCMC settings
-saved.per.chain <- 1000
-nc <- 3         #num. chains (this is a standard number of chains)
-nb <- 500    #burn-in; draws from Markov chain that are discarded
-nt <- 1        #thin chains to save diskspace / reduce autocorrelation among repeated draws
-ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
+testing <- TRUE
+if(testing) {
+  saved.per.chain <- 1000
+  nc <- 3         #num. chains (this is a standard number of chains)
+  nb <- 500    #burn-in; draws from Markov chain that are discarded
+  nt <- 1        #thin chains to save diskspace / reduce autocorrelation among repeated draws
+  ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
+} else {
+  saved.per.chain <- 2500
+  nc <- 4         #num. chains (this is a standard number of chains)
+  nb <- 10000    #burn-in; draws from Markov chain that are discarded
+  nt <- 4        #thin chains to save diskspace / reduce autocorrelation among repeated draws
+  ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
+}
 
 ###################################################################
 #Call JAGS from R using rjags and setup to run on multiple cores
@@ -517,6 +526,7 @@ traceplot(out, parameters = c("mu.b0", "tau.b0", "mu.a0", "tau.a0"))
 whiskerplot(out, parameters = c("rho", "mu.b0", "sigma.psi", "mu.b1", "tau.b1", "mu.a0", "sigma.p", "mu.a1", "tau.a1"))
 whiskerplot(out, parameters = c("p_mean"))
 whiskerplot(out, parameters = c("b1")) # effects of pH by species
+whiskerplot(out, parameters = c("a1")) # effects of pH by species
 whiskerplot(out, parameters = c("occ_sp")) # number of transects occupied by each species
 whiskerplot(out, parameters = c("occ_trans")) # number of species per transect
 
