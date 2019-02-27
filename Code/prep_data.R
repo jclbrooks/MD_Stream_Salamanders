@@ -43,6 +43,12 @@ df$obs <- df$count
 df[df$obs > 1 & !is.na(df$obs), "obs"] <- 1
 summary(df)
 
+# Remove PRUB from df
+
+prub <- df[which(df$species == "PRUB"),]
+df2 <- df[-which(df$species == "PRUB"),]
+df <- df2
+
 # Transect-level covariates
 df_trans <- df %>%
   ungroup() %>%
