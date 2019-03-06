@@ -49,6 +49,11 @@ max_pass <- shenandoah  %>%
   group_by(Site, Date) %>%
   summarise(max_pass = max(Pass, na.rm = TRUE))
 
+# if(she$count = "NULL" && she$Pass <= max_pass) {0
+# } else {
+#   "NA"
+# }
+
 
 # Remove NULLs from capitals data
 na <- cap[which(cap$species == "NULL"),]

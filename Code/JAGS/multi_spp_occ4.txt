@@ -43,13 +43,13 @@
     for(i in 1:n_species) {	
       for(j in 1:n_trans) { 
         for(l in 1:n_stages) {
-          logit(psi[j,i,l]) <- b0[i] + b1[i]*ec[j]
+          logit(psi[j,i,l]) <- b0[i] + b1[i]*pH[j]
     
           Z[j,i,l] ~ dbern(psi[j,i,l])
     
           # Estimate detection for species i and stage k at transect j during visit k
           for (k in 1:n_visits) {
-            logit(p[j,k,i,l]) <- a0[i] + a1[i] * water[j, k]
+            logit(p[j,k,i,l]) <- a0[i] + a1[i] * time_min[j, k]
             mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i,l]
             y[j,k,i,l] ~ dbern(mu.p[j,k,i,l])
     
