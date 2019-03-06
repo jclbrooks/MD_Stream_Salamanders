@@ -611,7 +611,7 @@ out1 <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/mu
             parallel = TRUE,
             bugs.format = TRUE)
 # beta1: pH, alpha1: time_min w/ added covariance of occupancy with detection
-out4 <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ2.txt", 
+out4 <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/multi_spp_occ4.txt", 
             n.chains = nc,
             n.burnin = nb,
             n.iter = ni,
@@ -635,16 +635,16 @@ out3 <- jags(data = data_list, inits = inits, params, model.file = "Code/JAGS/mu
 
 #out <- out1
 
-summary(out, parameters = c("mu.b0", "tau.b0", "mu.b1", "tau.b1", "mu.a0", "tau.a0", "mu.a1", "tau.a1"))
+summary(out1, parameters = c("mu.b0", "tau.b0", "mu.b1", "tau.b1", "mu.a0", "tau.a0", "mu.a1", "tau.a1"))
 
-# ###traceplot(out4, parameters = c("rho",
-#                               "mu.b0", 
-#                               "mu.a0", 
-#                               "sigma.psi", 
-#                               "sigma.p", 
-#                               "a0"
-#                               ,"b0"
-#                               ))
+traceplot(out4, parameters = c("rho",
+                              "mu.b0",
+                              "mu.a0",
+                              "sigma.psi",
+                              "sigma.p",
+                              "a0"
+                              ,"b0"
+                              ))
 
 traceplot(out1, parameters = c("mu.b0", "tau.b0", "mu.a0", "tau.a0", "a0", "b0"))
 traceplot(out4, parameters = c("mu.b0", "tau.b0", "mu.a0", "tau.a0", "a0", "b0"))
