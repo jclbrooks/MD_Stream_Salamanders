@@ -35,11 +35,11 @@ colnames(cap) <- c("transect", "species", "age", "pass1", "pass2", "pass3", "pas
 # add_count(shenandoah, name = "count")
 
 she <- shenandoah  %>%
-  group_by(Site, Species, Age, Pass) %>%
-  select(Site, Species, Age, Pass) %>%
-  summarise(count = n()) %>%
-  mutate(Pass = paste0("pass", Pass)) %>%
-  spread(Pass, count)
+  group_by(Site, Date, Species, Age, Pass) %>%
+  select(Site, Date, Species, Age, Pass) %>%
+  summarise(count = n())# %>%
+  # mutate(Pass = paste0("pass", Pass)) %>%
+  # spread(Pass, count)
 # shenandoah[452,]
 # shenandoah[453,]
 # shenandoah[467,]
@@ -48,6 +48,21 @@ she <- shenandoah  %>%
 max_pass <- shenandoah  %>%
   group_by(Site, Date) %>%
   summarise(max_pass = max(Pass, na.rm = TRUE))
+
+# passes <- she[,c(5:12)]
+
+for (i in she$Pass) {
+  if(she$Pass > max_pass){
+    she$count="NA"} else {she$count=she$count} 
+}
+
+# she$count == "NA" &&
+
+she <- she %>%
+  mutate(Pass = paste0("pass", Pass)) %>%
+  spread(Pass, count)
+
+
 
 # if(she$count = "NULL" && she$Pass <= max_pass) {0
 # } else {
