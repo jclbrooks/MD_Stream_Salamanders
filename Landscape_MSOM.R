@@ -4,11 +4,12 @@
 
 library(dplyr)
 library(tidyr)
+library(lubridate)
 
 # Read in data
 canaan <- read.csv("Data/Landscape/CVNWR_transects.csv", header = T, stringsAsFactors = F)
 capital <- read.csv("Data/Landscape/NCRlotic_all.csv", header = T, stringsAsFactors = F)
-shenandoah <- read.csv("Data/Landscape/Shen_snp12.csv", header = T)
+shenandoah <- read.csv("Data/Landscape/Shen_snp12.csv", header = T, stringsAsFactors = FALSE)
 
 str(canaan)
 str(capital)
@@ -35,33 +36,50 @@ colnames(cap) <- c("transect", "species", "age", "pass1", "pass2", "pass3", "pas
 # add_count(shenandoah, name = "count")
 
 she <- shenandoah  %>%
+  mutate(Date = mdy(Date),
+         Age = ifelse(Age == "J", "A", Age)) %>%
+  filter(Pass %in% 1:5,
+         Age != "") %>%
   group_by(Site, Date, Species, Age, Pass) %>%
   select(Site, Date, Species, Age, Pass) %>%
-  summarise(count = n())# %>%
-  # mutate(Pass = paste0("pass", Pass)) %>%
-  # spread(Pass, count)
-# shenandoah[452,]
-# shenandoah[453,]
-# shenandoah[467,]
-# shenandoah$X.
+  summarise(count = n()) %>%
+  ungroup() %>%
+  mutate(Year = year(Date),
+         Age = ifelse(Age == "l", "L", Age))
 
-max_pass <- shenandoah  %>%
+max_pass <- she %>%
+  ungroup() %>%
   group_by(Site, Date) %>%
-  summarise(max_pass = max(Pass, na.rm = TRUE))
+  summarize(max_pass = max(Pass),
+            visit = NA_integer_) %>%
+  arrange(Site, Date) %>%
+  ungroup()
 
-# passes <- she[,c(5:12)]
-
-for (i in she$Pass) {
-  if(she$Pass > max_pass){
-    she$count="NA"} else {she$count=she$count} 
+max_pass$visit[1] <- 1
+for(i in 2:nrow(max_pass)) {
+  if(max_pass$Site[i] == max_pass$Site[i-1]) {
+    max_pass$visit[i] <- max_pass$visit[i-1] + 1
+  } else {
+    max_pass$visit[i] <- 1
+  }
 }
 
-# she$count == "NA" &&
+just_pass <- max_pass %>%
+  filter(visit == 1) %>%
+  select(-Date)
 
+# filter to just first visit to each site
 she <- she %>%
-  mutate(Pass = paste0("pass", Pass)) %>%
-  spread(Pass, count)
+  filter() # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
+  left_join(max_pass) # %>%
+  # filter(visit == 1)
 
+combos <- she %>%
+  expand(nesting(Site, Year, Age, Species), Pass) 
+
+she <- combos %>%
+  left_join(she) %>%
+  mutate(count = ifelse(Pass <= max_pass))
 
 
 # if(she$count = "NULL" && she$Pass <= max_pass) {0
