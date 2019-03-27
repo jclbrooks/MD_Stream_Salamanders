@@ -15,22 +15,30 @@ str(canaan)
 str(capital)
 str(shenandoah)
 
-# Format data: transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
+# Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
 # made all same format, column names
 can <- canaan %>%
   mutate(Transect = paste(Name, Transect, Year, sep = "_")) %>%
   group_by(Transect, Species, Age) %>%
   select(Transect, Pass, Species, Age, Caught) %>%
-  mutate(Pass = paste0("p", Pass)) %>%
-  spread(Pass, Caught)
-colnames(can) <- c("transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+  mutate(Pass = paste0("p", Pass),
+         region = "Canaan") %>%
+  spread(Pass, Caught) %>%
+  select(region, Transect, Species, Age, p1, p2, p3, p4)
+colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 cap <- capital %>%
   mutate(Transect = paste(PointName, Visit, sep = "_v"),
-         pass4 = "NULL") %>% # added pass4 column to match canaan dataframe
+         pass4 = "NULL",
+         region = "Capital") %>% # added pass4 column to match canaan dataframe
   group_by(Transect, SpeciesCode, SAgeID) %>%
-  select(Transect, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4)
-colnames(cap) <- c("transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+  select(region, Transect, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4)
+colnames(cap) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+
+# Remove NULLs from capitals data
+na <- cap[which(cap$species == "NULL"),]
+cap1 <- cap[-which(cap$species == "NULL"),]
+cap <- cap1
 
 # list <- c(shenandoah$Site, shenandoah$Species, shenandoah$Age)
 # add_count(shenandoah, name = "count")
@@ -53,7 +61,8 @@ max_pass <- she %>%
   summarize(max_pass = max(Pass),
             visit = NA_integer_) %>%
   arrange(Site, Date) %>%
-  ungroup()
+  ungroup() 
+  
 
 max_pass$visit[1] <- 1
 for(i in 2:nrow(max_pass)) {
@@ -70,26 +79,40 @@ just_pass <- max_pass %>%
 
 # filter to just first visit to each site
 she <- she %>%
-  filter() # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
-  left_join(max_pass) # %>%
-  # filter(visit == 1)
+  left_join(max_pass) %>%
+  filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
 
+  #Pass = paste0("p", Pass)
+  
 combos <- she %>%
-  expand(nesting(Site, Year, Age, Species), Pass) 
+  expand(nesting(Site, Date, Age, Species), Pass) 
 
 she <- combos %>%
-  left_join(she) %>%
-  mutate(count = ifelse(Pass <= max_pass))
+  left_join(she) #%>%
+  #mutate(count = ifelse(Pass <= max_pass, count = count, count = "NA"))
 
 
-# if(she$count = "NULL" && she$Pass <= max_pass) {0
+# if(she$Pass <= max_pass) {count = count
 # } else {
-#   "NA"
+#   count = "NA"
 # }
 
 
-# Remove NULLs from capitals data
-na <- cap[which(cap$species == "NULL"),]
-cap1 <- cap[-which(cap$species == "NULL"),]
-cap <- cap1
+
+# spread canaan dataset
+# she <- she %>%
+#   spread(Pass, count) %>%
+#   mutate(region = "Shenandoah") %>%
+#   select(region, Site, Species, Age, 1, 2, 3, 4) # these pass names may cause problems
+# colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+# 
+# 
+# 
+# 
+# 
+# rbind(can, cap, she)
+
+
+
+
  
