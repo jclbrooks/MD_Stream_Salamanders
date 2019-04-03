@@ -24,12 +24,13 @@ can <- canaan %>%
   mutate(Pass = paste0("p", Pass),
          region = "Canaan") %>%
   spread(Pass, Caught) %>%
-  select(region, Transect, Species, Age, p1, p2, p3, p4)
+  select(region, Transect, Species, Age, p1, p2, p3, p4) %>%
+  as.data.frame(. , stringsAsFactors = FALSE) 
 colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 cap <- capital %>%
   mutate(Transect = paste(PointName, Visit, sep = "_v"),
-         pass4 = "NULL",
+         pass4 = NA_real_,
          region = "Capital") %>% # added pass4 column to match canaan dataframe
   group_by(Transect, SpeciesCode, SAgeID) %>%
   select(region, Transect, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4)
@@ -39,6 +40,15 @@ colnames(cap) <- c("region", "transect", "species", "age", "pass1", "pass2", "pa
 na <- cap[which(cap$species == "NULL"),]
 cap1 <- cap[-which(cap$species == "NULL"),]
 cap <- cap1
+
+cap[cap == "NULL"] <- NA_integer_
+
+cap <- cap %>%
+  mutate(pass1 = as.numeric(pass1),
+         pass2 = as.numeric(pass2),
+         pass3 = as.numeric(pass3),
+         pass4 = as.numeric(pass4)) %>%
+  as.data.frame(. , stringsAsFactors = FALSE) 
 
 # list <- c(shenandoah$Site, shenandoah$Species, shenandoah$Age)
 # add_count(shenandoah, name = "count")
@@ -105,14 +115,22 @@ she3 <- she2 %>%
   mutate(Pass = paste0("p", Pass)) %>%
   spread(Pass, count) %>%
   mutate(region = "Shenandoah") %>%
-  select(region, Site, Species, Age, p1, p2, p3, p4, p5) # these pass names may cause problems
+  select(region, Site, Species, Age, p1, p2, p3, p4, p5) %>% # these pass names may cause problems
+  as.data.frame(. , stringsAsFactors = FALSE) 
 colnames(she3) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
 
+landscape_N <- bind_rows(can, cap, she3)
+
+##### Like Shen replace the NA if <= max pass with 0 #####
 
 
-
-
-landscape_occ <- rbind(can, cap, she3)
+landscape_occ <- landscape_N %>%
+  mutate(pass1 = ifelse(pass1 > 0, 1, 0),
+         pass2 = ifelse(pass2 > 0, 1, 0),
+         pass3 = ifelse(pass3 > 0, 1, 0),
+         pass4 = ifelse(pass4 > 0, 1, 0),
+         pass5 = ifelse(pass5 > 0, 1, 0),
+         canaan = ifelse(region == "Canaan", 1, 0)) # do for each region
 
 
 ########################################
@@ -241,10 +259,10 @@ if(testing) {
   nt <- 1        #thin chains to save diskspace / reduce autocorrelation among repeated draws
   ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
 } else {
-  saved.per.chain <- 2500
+  saved.per.chain <- 2500 # might have to make larger
   nc <- 4         #num. chains (this is a standard number of chains)
-  nb <- 10000    #burn-in; draws from Markov chain that are discarded
-  nt <- 4        #thin chains to save diskspace / reduce autocorrelation among repeated draws
+  nb <- 50000    #burn-in; draws from Markov chain that are discarded
+  nt <- 4        #thin chains to save diskspace / reduce autocorrelation among repeated draws (might have to make 40)
   ni <- saved.per.chain*nt + nb  #iterations (draws from posterior dist.)
 }
 
