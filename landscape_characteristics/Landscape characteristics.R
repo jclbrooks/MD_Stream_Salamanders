@@ -27,17 +27,17 @@ str(NCRnew)
 
 #Read in landscape data
 
-cvnwr <- read.csv("Landscape_ecology/landscape_characteristics/CVNWR_locations_intersected.csv", header = T, stringsAsFactors = F)
-restored <- read.csv("Landscape_ecology/landscape_characteristics/MDE_Salamander_Sites_intersected.csv", header = T, stringsAsFactors = F)  
-ncrlotic <- read.csv("Landscape_ecology/landscape_characteristics/NCRlotic_locations_intersected.csv", header = T, stringsAsFactors = F) 
-shenandoah <- read.csv("Landscape_ecology/landscape_characteristics/Shenandoah_locations_intersected.csv", header = T, stringsAsFactors = F)
+cvnwr <- read.csv("landscape_characteristics/CVNWR_locations_intersected.csv", header = T, stringsAsFactors = F)
+restored <- read.csv("landscape_characteristics/MDE_Salamander_Sites_intersected.csv", header = T, stringsAsFactors = F)  
+ncrlotic <- read.csv("landscape_characteristics/NCRlotic_locations_intersected.csv", header = T, stringsAsFactors = F) 
+shenandoah <- read.csv("landscape_characteristics/Shenandoah_locations_intersected.csv", header = T, stringsAsFactors = F)
 #rerence <-  read.csv("Landscape_ecology/landscape_characteristics/Sites_intersect.csv", header = T, stringsAsFactors = F)  
 
 
 # Re-structure data
 str(cvnwr) ######################## PROBLEMS
 cvnwr <- cvnwr %>%
-  select(cvnwr$Name, cvnwr$Year, cvnwr$Transect__, cvnwr$NEAR_FID) %>%
+  dplyr::select(Name, Year, Transect__, NEAR_FID) %>%
   mutate(site = paste(Name, Year, Transect__, sep="_"), #Name = Name_Year_Transect
          UnitName = "Canaan Valley National Wildlife Refuge") %>% 
   select(UnitName, site, NEAR_FID)
@@ -76,9 +76,9 @@ tail(landscape05)
 
 
 # Read in characteristics file
-characteristics02 <- read.csv("Landscape_ecology/covariates_02/Catchments02.csv", header = T, stringsAsFactors = F)
+characteristics02 <- read.csv("landscape_characteristics/Catchments02.csv", header = T, stringsAsFactors = F)
 # Shenandoah, NCR, Sites
-characteristics05 <- read.csv("Landscape_ecology/covariates_05/Catchments05.csv", header = T, stringsAsFactors = F)
+characteristics05 <- read.csv("landscape_characteristics/Catchments05.csv", header = T, stringsAsFactors = F)
 # CVNWR, Restored
 
 
