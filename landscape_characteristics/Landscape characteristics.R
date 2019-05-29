@@ -8,6 +8,7 @@
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(readr)
 
 NCR <- read.csv("Data/Landscape/NCRlotic_all.csv", header=T, stringsAsFactors = F)
 
@@ -76,14 +77,49 @@ tail(landscape05)
 
 
 # Read in characteristics file
-characteristics02 <- read.csv("landscape_characteristics/Catchments02.csv", header = T, stringsAsFactors = F)
+characteristics02 <- read_csv("Landscape_ecology/covariates_02/Catchments02.csv", 
+                              col_types = list(featureid = col_character(),
+                                               variable = col_character(),
+                                               value = col_double(),
+                                               zone = col_character(),
+                                               riparian_distance_ft = col_logical()))
+
 # Shenandoah, NCR, Sites
-characteristics05 <- read.csv("landscape_characteristics/Catchments05.csv", header = T, stringsAsFactors = F)
+characteristics05 <- read_csv("Landscape_ecology/covariates_05/Catchments05.csv", 
+                              col_types = list(featureid = col_character(),
+                                               variable = col_character(),
+                                               value = col_double(),
+                                               zone = col_character(),
+                                               riparian_distance_ft = col_logical()))
+
+# Remove extra featureids
+featureids02_keepers <- unique(landscape02$featureid)
+featureids05_keepers <- unique(landscape05$featureid)
+
+# str(characteristics02)
+# library(stringr)
+# ids <- characteristics02 %>%
+#   dplyr::select(featureid) %>%
+#   distinct() %>%
+#   mutate(featureid = str_sub(string = featureid, start = 4, end = 9))
+# unique(characteristics05$featureid)
+
+characteristics02 <- characteristics02 %>%
+  dplyr::filter(featureid %in% featureids02_keepers)
+
+characteristics05 <- characteristics05 %>%
+  dplyr::filter(featureid %in% featureids05_keepers)
+
 # CVNWR, Restored
 
+str(landscape02)
+landscape02$featureid <- as.character(landscape02$featureid)
+landscape05$featureid <- as.character(landscape05$featureid)
+str(characteristics02)
 
 combine02 <- landscape02 %>%
   left_join(characteristics02)
+summary(combine02)
 head(combine02)
 str(combine02)
 str(landscape02)
