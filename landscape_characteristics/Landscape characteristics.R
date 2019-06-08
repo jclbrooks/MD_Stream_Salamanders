@@ -28,33 +28,33 @@ str(NCRnew)
 
 #Read in landscape data
 
-cvnwr <- read.csv("landscape_characteristics/CVNWR_locations_intersected.csv", header = T, stringsAsFactors = F)
-restored <- read.csv("landscape_characteristics/MDE_Salamander_Sites_intersected.csv", header = T, stringsAsFactors = F)  
-ncrlotic <- read.csv("landscape_characteristics/NCRlotic_locations_intersected.csv", header = T, stringsAsFactors = F) 
-shenandoah <- read.csv("landscape_characteristics/Shenandoah_locations_intersected.csv", header = T, stringsAsFactors = F)
+cvnwr <- read.csv("landscape_characteristics/CVNWR_catchments_intersect.csv", header = T, stringsAsFactors = F)
+restored <- read.csv("landscape_characteristics/MDE_Salamander_Sites_catchments_intersect.csv", header = T, stringsAsFactors = F)  
+ncrlotic <- read.csv("landscape_characteristics/NCR_catchments_intersect.csv", header = T, stringsAsFactors = F) 
+shenandoah <- read.csv("landscape_characteristics/Shenandoah_catchments_intersect.csv", header = T, stringsAsFactors = F)
 #rerence <-  read.csv("Landscape_ecology/landscape_characteristics/Sites_intersect.csv", header = T, stringsAsFactors = F)  
 
 
 # Re-structure data
 str(cvnwr) ######################## PROBLEMS
 cvnwr <- cvnwr %>%
-  dplyr::select(Name, Year, Transect__, NEAR_FID) %>%
+  dplyr::select(Name, Year, Transect__, FEATUREID) %>%
   mutate(site = paste(Name, Year, Transect__, sep="_"), #Name = Name_Year_Transect
          UnitName = "Canaan Valley National Wildlife Refuge") %>% 
-  select(UnitName, site, NEAR_FID)
+  select(UnitName, site, FEATUREID)
 colnames(cvnwr) <- c("region", "transect", "featureid")
 
 
 str(restored)
 restored <- restored %>%
   mutate(unit_name = "Savage River State Forest") %>%
-  select(unit_name, Site_Name, NEAR_FID) 
+  select(unit_name, Site_Name, FEATUREID) 
 colnames(restored) <- c("region", "transect", "featureid")
 
 
 str(ncrlotic)
 ncrlotic <- ncrlotic %>%
-  select(UnitName, PointName, NEAR_FID) %>%
+  select(UnitName, PointName, FEATUREID) %>%
   dplyr::distinct(PointName, .keep_all = T)
 colnames(ncrlotic) <- c("region", "transect", "featureid")
 
@@ -62,7 +62,7 @@ colnames(ncrlotic) <- c("region", "transect", "featureid")
 str(shenandoah)
 shenandoah <- shenandoah %>%
   mutate(unit = "Shenandoah National Park") %>%
-  select(unit, Object_ID, NEAR_FID)
+  select(unit, Object_ID, FEATUREID)
 colnames(shenandoah) <- c("region", "transect", "featureid")
 
 
