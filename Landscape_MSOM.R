@@ -5,6 +5,11 @@
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(readr)
+
+########################################
+###### SALAMANDER OCCUPANCY DATA #######
+########################################
 
 # Read in data
 canaan <- read.csv("Data/Landscape/CVNWR_transects.csv", header = T, stringsAsFactors = F)
@@ -130,7 +135,34 @@ landscape_occ <- landscape_N %>%
          pass3 = ifelse(pass3 > 0, 1, 0),
          pass4 = ifelse(pass4 > 0, 1, 0),
          pass5 = ifelse(pass5 > 0, 1, 0),
-         canaan = ifelse(region == "Canaan", 1, 0)) # do for each region
+         canaan = ifelse(region == "Canaan", 1, 0),
+         capital = ifelse(region == "Capital", 1, 0),
+         shenandoah = ifelse(region == "Shenandoah", 1, 0)) # do for each region
+
+
+########################################
+##### LANDSCAPE CHARACTERISTICS ########
+########################################
+
+huc02_landscape <- read_csv("landscape_characteristics/HUC02_sites_landscape_characteristics.csv")
+# National Capitals Region, Shenandoah, and W MD reference streams
+
+huc05_landscape <- read_csv("landscape_characteristics/HUC05_sites_landscape_characteristics.csv")
+# Canaan Valley NWR and W MD restored streams
+
+landscape_characteristics <- bind_rows(huc02_landscape, huc05_landscape)
+
+landscape_characteristics <- landscape_characteristics %>%
+  mutate(region = ifelse(region == "C & O Canal National Historic Park", "Capital", region),
+         region = ifelse(region == "Rock Creek National Park", "Capital", region),
+         region = ifelse(region == "Prince William Forest National Park", "Capital", region),
+         region = ifelse(region == "Shenandoah National Park", "Shenandoah", region),
+         region = ifelse(region == "Canaan Valley National Wildlife Refuge", "Canaan", region),
+         region = ifelse(region == "Savage River State Park", "Savage", region))
+
+
+modeldata <- landscape_occ %>%
+  merge(landscape_characteristics)
 
 
 ########################################
