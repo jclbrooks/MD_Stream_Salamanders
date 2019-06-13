@@ -32,7 +32,7 @@ cvnwr <- read.csv("landscape_characteristics/CVNWR_catchments_intersect.csv", he
 restored <- read.csv("landscape_characteristics/MDE_Salamander_Sites_catchments_intersect.csv", header = T, stringsAsFactors = F)  
 ncrlotic <- read.csv("landscape_characteristics/NCR_catchments_intersect.csv", header = T, stringsAsFactors = F) 
 shenandoah <- read.csv("landscape_characteristics/Shenandoah_catchments_intersect.csv", header = T, stringsAsFactors = F)
-#rerence <-  read.csv("Landscape_ecology/landscape_characteristics/Sites_intersect.csv", header = T, stringsAsFactors = F)  
+reference <-  read.csv("landscape_characteristics/Sites_catchment_intersect.csv", header = T, stringsAsFactors = F)  
 
 
 # Re-structure data
@@ -65,9 +65,15 @@ shenandoah <- shenandoah %>%
   select(unit, Object_ID, FEATUREID)
 colnames(shenandoah) <- c("region", "transect", "featureid")
 
+str(reference)
+reference <- reference %>%
+  mutate(unit = "Savage River State Forest") %>%
+  select(unit, Id, FEATUREID)
+colnames(reference) <- c("region", "transect", "featureid")
+
 
 #Bind data all together
-landscape02 <- bind_rows(ncrlotic, shenandoah)
+landscape02 <- bind_rows(ncrlotic, shenandoah, reference)
 head(landscape02)
 tail(landscape02)
 
@@ -133,7 +139,8 @@ str(combine02)
 str(landscape02)
 combine02$variable
 
-
+#write.csv(combine02, "landscape_characteristics/HUC02_sites_landscape_characteristics.csv")
+#write.csv(combine05, "landscape_characteristics/HUC05_sites_landscape_characteristics.csv")
 
 
 
