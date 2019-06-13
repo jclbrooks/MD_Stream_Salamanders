@@ -160,10 +160,24 @@ landscape_characteristics <- landscape_characteristics %>%
          region = ifelse(region == "Canaan Valley National Wildlife Refuge", "Canaan", region),
          region = ifelse(region == "Savage River State Park", "Savage", region))
 
+################# Pick variables to potentially use ##########
+vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
+
+landscape_vars <- landscape_characteristics %>%
+  filter(zone == "local",
+         variable %in% vars) %>%
+  # mutate(loc = paste0(.$region, "_", .$transect)) %>%
+  select(region, transect, variable, value) %>%
+  distinct() %>%
+  # pivot_wider(names_from = variable, values_from = value, values_fill = NA)
+  spread(key = variable, value = value)
 
 modeldata <- landscape_occ %>%
-  merge(landscape_characteristics)
+  left_join(landscape_vars)
 
+str(modeldata)
+
+unique(landscape_occ$transect) %in% unique(landscape_vars$transect)
 
 ########################################
 ########### CODE FOR JAGS ##############
@@ -175,9 +189,41 @@ n_streams <- length(unique(landscape_occ$transect)) # J
 n_visits <- length(unique(sal$visit)) # K
 n_stages <- length(unique(occ$stage)) # L
 
+########### temporary hack ##########3
+n_visits <- 5
+n_stages <- 2 
+###########################
+
+# y[j,k,i,l]
+
+# Make 4-D observation array
+# Order everything the same way!!!!!!!!!
+modeldata <- modeldata %>%
+  arrange(age, species, transect)
+str(modeldata)
+
+occ_array <- array(NA, dim = c(n_trans, n_visits, n_species, n_stages))
+
+species_observed <- unique(modeldata$species)
+transects <- unique(modeldata$transect)
+stages <- unique(modeldata$age)
+
+# foo <- occ[which(occ$species == species_observed[1] & occ$stage == stages[1]), c("v1", "v2", "v3", "v4")]
+
+# for(j in 1:n_sites) {
+# for (k in 1:n_visits) {
+for (i in 1:n_species) {
+  for (l in 1:n_stages) {
+    occ_array[1:n_trans, 1:n_visits, i, l] <- as.matrix(modeldata[which(modeldata$species == species_observed[i] & modeldata$age == stages[l]), c("pass1", "pass2", "pass3", "pass4", "pass5")])
+  }
+}
+#   }
+# }
+str(occ_array)
+  
 data_list = list(y = occ_array, n_trans = n_trans, n_visits = n_visits, n_species = n_species, n_stages = n_stages,
-                pH = as.numeric(df_trans$pH_s), 
-                air = as.numeric(df_trans$air_s),
+                forest = (modeldata$forest - mean(modeldata$forest, na.rm = TRUE)) / sd(modeldata$forest, na.rm = TRUE), 
+                area = as.numeric(scale(modeldata$AreaSqKM)),
                 ec = as.numeric(df_trans$ec_s),
                 water = as.matrix(select(water, v1, v2, v3, v4)),
                 time_min = as.matrix(select(time_min, v1, v2, v3, v4)))
@@ -234,7 +280,7 @@ cat("
     
           Z[j,i,l] ~ dbern(psi[j,i,l])
     
-          # Estimate detection for species i and stage k at transect j during visit k
+          # Estimate detection for species i and stage l at transect j during visit k
           for (k in 1:n_visits) {
             logit(p[j,k,i,l]) <- a0[i] + a1[i] * water[j, k]
             mu.p[j,k,i,l] <- p[j,k,i,l] * Z[j,i,l]
