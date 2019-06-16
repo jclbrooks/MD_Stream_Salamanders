@@ -128,6 +128,7 @@ landscape_N <- bind_rows(can, cap, she3)
 
 ##### Like Shen replace the NA if <= max pass with 0 #####
 
+spec <- c("DMON", "DOCH", "GPOR", "DFUS", "DOCR", "EBIS", "PRUB", "ELON", "EGUT")
 
 landscape_occ <- landscape_N %>%
   mutate(pass1 = ifelse(pass1 > 0, 1, 0),
@@ -137,7 +138,12 @@ landscape_occ <- landscape_N %>%
          pass5 = ifelse(pass5 > 0, 1, 0),
          canaan = ifelse(region == "Canaan", 1, 0),
          capital = ifelse(region == "Capital", 1, 0),
-         shenandoah = ifelse(region == "Shenandoah", 1, 0)) # do for each region
+         shenandoah = ifelse(region == "Shenandoah", 1, 0),
+         age = ifelse(age == "juvenile" | age == "recently metamorphosed" | age == "adult" | age == "metamorphosing", "A", age),
+         age = ifelse(age == "" | age == "  ", NA, age),
+         age = ifelse(age == "larva", "L", age)) %>%
+  filter(species %in% spec)
+
 
 
 ########################################
