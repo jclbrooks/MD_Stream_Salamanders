@@ -24,11 +24,47 @@ str(shenandoah)
 # Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
 # made all same format, column names
 can <- canaan %>%
-  mutate(Transect = paste(Name, Transect, Year, sep = "_")) %>%
+  mutate(Transect = paste(Name, Transect, sep = "_")) %>%
   group_by(Transect, Species, Age) %>%
-  select(Transect, Pass, Species, Age, Caught) %>%
-  mutate(Pass = paste0("p", Pass),
-         region = "Canaan") %>%
+  select(Transect, Pass, Species, Age, Caught, Date) %>%
+  mutate(#Pass = paste0("p", Pass),
+         region = "Canaan") 
+
+max_pass_can <- can %>%
+  ungroup() %>%
+  group_by(Transect, Date) %>%
+  summarize(max_pass = max(Pass),
+            visit = NA_integer_) %>%
+  arrange(Transect, Date) %>%
+  ungroup() 
+
+
+max_pass_can$visit[1] <- 1
+for(i in 2:nrow(max_pass_can)) {
+  if(max_pass_can$Transect[i] == max_pass_can$Transect[i-1]) {
+    max_pass_can$visit[i] <- max_pass_can$visit[i-1] + 1
+  } else {
+    max_pass_can$visit[i] <- 1
+  }
+}
+
+just_pass <- max_pass_can %>%
+  filter(visit == 1) %>%
+
+combos <- can %>%
+  # expand(nesting(Transect, Date, Age, Species), Pass) %>%
+  expand(Transect, Date, Age, Species, Pass) %>%
+  arrange(Transect, Date, Species, Age, Pass) %>%
+  left_join(max_pass_can) 
+
+can2 <- combos %>%
+  left_join(can) %>%
+  # group_by(Site) %>%
+  mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
+  arrange(Transect, Date, Species, Age, Pass)
+
+
+%>%
   spread(Pass, Caught) %>%
   select(region, Transect, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
@@ -109,6 +145,12 @@ she2 <- combos %>%
   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count)) 
 
 she2 <- she2[-713,]
+
+
+#------------- Repeat this for cannan and NCR -----------
+
+
+
 
 ######################
 # ROW 713 AND 714 NEED TO BE COMBINED? OR 713 NEEDS TO BE DELETED
@@ -200,8 +242,15 @@ modeldata <- landscape_vars %>%
   right_join(landscape_occ)
 
 str(modeldata)
+summary(modeldata)
 
 unique(landscape_occ$transect) %in% unique(landscape_vars$transect)
+
+unique(landscape_occ$transect)[!(unique(landscape_occ$transect) %in% unique(landscape_vars$transect))] # names of transects in the occupancy that are not in landscape variables
+
+
+
+
 
 ########################################
 ########### CODE FOR JAGS ##############
