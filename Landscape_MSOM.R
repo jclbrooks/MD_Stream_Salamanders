@@ -52,8 +52,10 @@ just_pass <- max_pass_can %>%
   filter(visit == 1) %>%
 
 combos <- can %>%
+  ungroup() %>%
   # expand(nesting(Transect, Date, Age, Species), Pass) %>%
-  expand(Transect, Date, Age, Species, Pass) %>%
+  #select(Transect, Date, Pass) %>%
+  expand(nesting(Transect, Date, Species, Age), Pass) %>%
   arrange(Transect, Date, Species, Age, Pass) %>%
   left_join(max_pass_can) 
 
