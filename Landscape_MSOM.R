@@ -6,6 +6,7 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 library(readr)
+library(stringr)
 
 ########################################
 ###### SALAMANDER OCCUPANCY DATA #######
@@ -142,8 +143,18 @@ landscape_occ <- landscape_N %>%
          age = ifelse(age == "juvenile" | age == "recently metamorphosed" | age == "adult" | age == "metamorphosing", "A", age),
          age = ifelse(age == "" | age == "  ", NA, age),
          age = ifelse(age == "larva", "L", age)) %>%
-  filter(species %in% spec)
+  filter(species %in% spec) %>%
+  mutate(transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 5), transect),
+         transect = ifelse(transect == "Camp 70-Yellow Creek_NA", "Camp 70-Yellow Creek", transect),
+         transect = ifelse(region == "Canaan", gsub(pattern = "*_", replacement = "", x = transect), transect),
+         #transect = ifelse(region == "Capital", substr(transect, 1, nchar(transect) - 3), transect),
+         transect = ifelse(region == "Capital", gsub(pattern = "_v.$", replacement = "", x = transect), transect),
+         transect = ifelse(region == "Capital", gsub(pattern = "_vNULL", replacement = "", x = transect), transect))
 
+unique(landscape_occ[,1:2])
+unique(landscape_characteristics[,1:2])
+unique(landscape_occ$transect)
+unique(landscape_characteristics$transect)
 
 
 ########################################
@@ -164,22 +175,29 @@ landscape_characteristics <- landscape_characteristics %>%
          region = ifelse(region == "Prince William Forest National Park", "Capital", region),
          region = ifelse(region == "Shenandoah National Park", "Shenandoah", region),
          region = ifelse(region == "Canaan Valley National Wildlife Refuge", "Canaan", region),
-         region = ifelse(region == "Savage River State Park", "Savage", region))
+         region = ifelse(region == "Savage River State Park", "Savage", region),
+         transect = ifelse(region == "Canaan", gsub(pattern = "*_.*_", replacement = "", x = transect), transect)#,
+         #transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 7), transect)
+         )
+  
 
 ################# Pick variables to potentially use ##########
 vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
 
 landscape_vars <- landscape_characteristics %>%
   filter(zone == "local",
-         variable %in% vars) %>%
+         variable %in% vars)%>%
   # mutate(loc = paste0(.$region, "_", .$transect)) %>%
   select(region, transect, variable, value) %>%
   distinct() %>%
   # pivot_wider(names_from = variable, values_from = value, values_fill = NA)
   spread(key = variable, value = value)
 
-modeldata <- landscape_occ %>%
-  left_join(landscape_vars)
+ modeldata <- landscape_occ %>%
+   left_join(landscape_vars)
+
+modeldata <- landscape_vars %>%
+  right_join(landscape_occ)
 
 str(modeldata)
 
