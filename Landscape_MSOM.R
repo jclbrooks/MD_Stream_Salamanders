@@ -27,7 +27,7 @@ can <- canaan %>%
   mutate(Transect = paste(Name, Transect, sep = "_")) %>%
   group_by(Transect, Species, Age) %>%
   select(Transect, Pass, Species, Age, Caught, Date) %>%
-  mutate(#Pass = paste0("p", Pass),
+  mutate(# Pass = paste0("p", Pass),
          region = "Canaan") 
 
 max_pass_can <- can %>%
@@ -49,15 +49,16 @@ for(i in 2:nrow(max_pass_can)) {
 }
 
 just_pass <- max_pass_can %>%
-  filter(visit == 1) %>%
+  filter(visit == 1)
 
 combos <- can %>%
-  ungroup() %>%
-  # expand(nesting(Transect, Date, Age, Species), Pass) %>%
-  #select(Transect, Date, Pass) %>%
-  expand(nesting(Transect, Date, Species, Age), Pass) %>%
-  arrange(Transect, Date, Species, Age, Pass) %>%
-  left_join(max_pass_can) 
+  dplyr::ungroup() %>%
+  mutate(Species = ifelse(Species == "DOCR", "DOCH", Species)) %>%
+  tidyr::expand(nesting(Transect, Date, Species),  Age, Pass) %>%
+  dplyr::filter(Species %in% c("GPOR", "DFUS", "EBIS", "DMON", "DOCH"),
+                Age %in% c("A", "L")) %>%
+  dplyr::arrange(Transect, Date, Species, Age, Pass) %>%
+  dplyr::left_join(max_pass_can) 
 
 can2 <- combos %>%
   left_join(can) %>%
@@ -66,11 +67,33 @@ can2 <- combos %>%
   arrange(Transect, Date, Species, Age, Pass)
 
 
-%>%
-  spread(Pass, Caught) %>%
-  select(region, Transect, Species, Age, p1, p2, p3, p4) %>%
+
+#--------- need to add date below and check if expanded for species-larvae-*age* combos for each transect -----------#
+
+can2 <- can2 %>%
+  ungroup() %>%
+  group_by(Transect, Date, Species, Age, visit) %>%
+  select(-region) %>%
+  mutate(Pass = paste0("p", Pass)) %>%
+  pivot_wider(names_from = Pass, values_from = Caught) %>%
+  mutate(region = "Canaan") %>%
+  # spread(Pass, Caught) %>%
+  mutate(Date = mdy(Date),
+         year = year(Date)) %>%
+  select(region, Transect, Date, visit, year, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
-colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+
+
+# Redo the naming
+# colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+
+
+
+
+#---------- haven't worked on the stuff below ----------
+
+
+
 
 cap <- capital %>%
   mutate(Transect = paste(PointName, Visit, sep = "_v"),
