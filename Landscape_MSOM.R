@@ -69,19 +69,22 @@ can2 <- combos %>%
 
 
 #--------- need to add date below and check if expanded for species-larvae-*age* combos for each transect -----------#
+###### It did not spread for all species-age combos at all sites, something wrong with spread(), can't get pivot_wider() to load
 
 can2 <- can2 %>%
   ungroup() %>%
   group_by(Transect, Date, Species, Age, visit) %>%
   select(-region) %>%
   mutate(Pass = paste0("p", Pass)) %>%
-  pivot_wider(names_from = Pass, values_from = Caught) %>%
+  #tidyr::pivot_wider(names_from = Pass, values_from = Caught) %>%
   mutate(region = "Canaan") %>%
-  # spread(Pass, Caught) %>%
+  spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
+  ungroup() %>%
   mutate(Date = mdy(Date),
          year = year(Date)) %>%
   select(region, Transect, Date, visit, year, Species, Age, p1, p2, p3, p4) %>%
-  as.data.frame(. , stringsAsFactors = FALSE) 
+  as.data.frame(. , stringsAsFactors = FALSE) %>%
+  arrange(region, Transect, visit, Species, Age)
 
 
 # Redo the naming
@@ -90,18 +93,18 @@ can2 <- can2 %>%
 
 
 
-#---------- haven't worked on the stuff below ----------
+#---------- worked on things until line 117, need to fix date to make sure all combos are being created ----------#
 
 
 
 
 cap <- capital %>%
-  mutate(Transect = paste(PointName, Visit, sep = "_v"),
+  mutate(#Transect = paste(PointName, Visit, sep = "_v"),
          pass4 = NA_real_,
          region = "Capital") %>% # added pass4 column to match canaan dataframe
-  group_by(Transect, SpeciesCode, SAgeID) %>%
-  select(region, Transect, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4)
-colnames(cap) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+  group_by(PointName, SpeciesCode, SAgeID) %>%
+  select(region, PointName, SDate, Visit, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4) %>%
+colnames(cap) <- c("region", "transect", "date", "visit", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 # Remove NULLs from capitals data
 na <- cap[which(cap$species == "NULL"),]
@@ -111,10 +114,13 @@ cap <- cap1
 cap[cap == "NULL"] <- NA_integer_
 
 cap <- cap %>%
+  arrange(region, transect, date, species, age) %>% 
   mutate(pass1 = as.numeric(pass1),
          pass2 = as.numeric(pass2),
          pass3 = as.numeric(pass3),
-         pass4 = as.numeric(pass4)) %>%
+         pass4 = as.numeric(pass4),
+         age = ifelse(age == "juvenile" | age == "adult", "A", age),
+         age = ifelse(age == "larva", "L", age)) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
 
 # list <- c(shenandoah$Site, shenandoah$Species, shenandoah$Age)
