@@ -23,6 +23,9 @@ str(shenandoah)
 
 # Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
 # made all same format, column names
+
+#--- Canaan Valley National Wildlife Refuge Dataset ---#
+
 can <- canaan %>%
   mutate(Transect = paste(Name, Transect, sep = "_")) %>%
   group_by(Transect, Species, Age) %>%
@@ -96,14 +99,14 @@ can2 <- can2 %>%
 #---------- worked on things until line 117, need to fix date to make sure all combos are being created ----------#
 
 
-
+#--- National Capitals Region Dataset --#
 
 cap <- capital %>%
   mutate(#Transect = paste(PointName, Visit, sep = "_v"),
          pass4 = NA_real_,
          region = "Capital") %>% # added pass4 column to match canaan dataframe
   group_by(PointName, SpeciesCode, SAgeID) %>%
-  select(region, PointName, SDate, Visit, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4) %>%
+  select(region, PointName, SDate, Visit, SpeciesCode, SAgeID, PassCount1, PassCount2, PassCount3, pass4)
 colnames(cap) <- c("region", "transect", "date", "visit", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 # Remove NULLs from capitals data
@@ -122,6 +125,33 @@ cap <- cap %>%
          age = ifelse(age == "juvenile" | age == "adult", "A", age),
          age = ifelse(age == "larva", "L", age)) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
+
+combos_cap <- cap %>%
+  dplyr::ungroup() %>%
+  mutate(species = ifelse(species == "ebis", "EBIS", species)) %>%
+  tidyr::expand(transect, date, species, age) %>%
+  dplyr::filter(species %in% c("DFUS", "EBIS", "PRUB", "ELON", "EGUT"),
+                age %in% c("A", "L")) %>%
+  dplyr::arrange(transect, date, species, age)
+
+cap2 <- combos_cap %>%
+  left_join(cap) %>%
+  # group_by(Site) %>%
+  #mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
+  arrange(transect, date, species, age)
+
+# ------------------------------- I think this produces way too many NAs ??? ------------------------ #
+
+
+
+
+
+
+
+
+
+
+#--- Shenandoah National Park Dataset ---#
 
 # list <- c(shenandoah$Site, shenandoah$Species, shenandoah$Age)
 # add_count(shenandoah, name = "count")
@@ -173,9 +203,12 @@ combos <- she %>%
 she2 <- combos %>%
   left_join(she) %>%
  # group_by(Site) %>%
-  mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count)) 
+  mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
+         Year = 2012) %>%
+  arrange(Site, Date, Species, Age, Pass, visit)
 
 she2 <- she2[-713,]
+# ------------ This needs to be spread into individual passes instead of one pass column ------------------#
 
 
 #------------- Repeat this for cannan and NCR -----------
