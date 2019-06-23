@@ -7,6 +7,10 @@ library(tidyr)
 library(lubridate)
 library(readr)
 library(stringr)
+library(devtools)
+
+devtools::install_github("tidyverse/tidyr")
+library(tidyr)
 
 ########################################
 ###### SALAMANDER OCCUPANCY DATA #######
@@ -122,23 +126,36 @@ cap <- cap %>%
          pass2 = as.numeric(pass2),
          pass3 = as.numeric(pass3),
          pass4 = as.numeric(pass4),
-         age = ifelse(age == "juvenile" | age == "adult", "A", age),
-         age = ifelse(age == "larva", "L", age)) %>%
+         age = ifelse(age == "juvenile" | age == "adult", "A", age), # add together
+         age = ifelse(age == "larva" | age == "metamorphosing", "L", age)) %>%
+  # select(-region) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
 
 combos_cap <- cap %>%
   dplyr::ungroup() %>%
   mutate(species = ifelse(species == "ebis", "EBIS", species)) %>%
-  tidyr::expand(transect, date, species, age) %>%
+  tidyr::expand(nesting(transect, date, visit), species, age) %>%
+  # nesting(Transect, Date, Species)
   dplyr::filter(species %in% c("DFUS", "EBIS", "PRUB", "ELON", "EGUT"),
                 age %in% c("A", "L")) %>%
   dplyr::arrange(transect, date, species, age)
 
+length(unique(cap$transect))
+
+length(unique(paste0(cap$transect, "_", cap$date)))
+length(unique(cap$species))
+length(unique(cap$age))
+
+# desired rows
+length(unique(paste0(cap$transect, "_", cap$date))) * 5 * 2
+
 cap2 <- combos_cap %>%
-  left_join(cap) %>%
+  ungroup() %>%
+  left_join(ungroup(cap)) %>%
   # group_by(Site) %>%
   #mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
-  arrange(transect, date, species, age)
+  arrange(transect, date, species, age) %>%
+  distinct()
 
 # ------------------------------- I think this produces way too many NAs ??? ------------------------ #
 
@@ -191,8 +208,11 @@ she <- she %>%
 
   #Pass = paste0("p", Pass)
   
+# desired output length for combos
+length(unique(paste(she$Site, she$Date))) * length(unique(she$Species)) * length(unique(she$Age)) * length(unique(she$Pass))
+
 combos <- she %>%
-  expand(nesting(Site, Date, Age, Species), Pass) %>%
+  expand(nesting(Site, Date), Age, Species, Pass) %>%
   left_join(just_pass) 
 
 she2 <- combos %>%
@@ -202,7 +222,7 @@ she2 <- combos %>%
          Year = 2012) %>%
   arrange(Site, Date, Species, Age, Pass, visit)
 
-she2 <- she2[-713,]
+# she2 <- she2[-713,]
 # ------------ This needs to be spread into individual passes instead of one pass column ------------------#
 
 
