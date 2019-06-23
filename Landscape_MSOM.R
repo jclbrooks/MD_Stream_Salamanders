@@ -16,10 +16,12 @@ library(stringr)
 canaan <- read.csv("Data/Landscape/CVNWR_transects.csv", header = T, stringsAsFactors = F)
 capital <- read.csv("Data/Landscape/NCRlotic_all.csv", header = T, stringsAsFactors = F)
 shenandoah <- read.csv("Data/Landscape/Shen_snp12.csv", header = T, stringsAsFactors = FALSE)
+wmaryland <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", header = T, stringsAsFactors = F)
 
 str(canaan)
 str(capital)
 str(shenandoah)
+str(wmaryland)
 
 # Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
 # made all same format, column names
@@ -79,9 +81,9 @@ can2 <- can2 %>%
   group_by(Transect, Date, Species, Age, visit) %>%
   select(-region) %>%
   mutate(Pass = paste0("p", Pass)) %>%
-  #tidyr::pivot_wider(names_from = Pass, values_from = Caught) %>%
+  dplyr::pivot_wider(names_from = Pass, values_from = Caught) %>%
   mutate(region = "Canaan") %>%
-  spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
+  #spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
   ungroup() %>%
   mutate(Date = mdy(Date),
          year = year(Date)) %>%
@@ -96,10 +98,8 @@ can2 <- can2 %>%
 
 
 
-#---------- worked on things until line 117, need to fix date to make sure all combos are being created ----------#
 
-
-#--- National Capitals Region Dataset --#
+#--- National Capitals Region Dataset _--#
 
 cap <- capital %>%
   mutate(#Transect = paste(PointName, Visit, sep = "_v"),
@@ -141,11 +141,6 @@ cap2 <- combos_cap %>%
   arrange(transect, date, species, age)
 
 # ------------------------------- I think this produces way too many NAs ??? ------------------------ #
-
-
-
-
-
 
 
 
@@ -230,6 +225,48 @@ she3 <- she2 %>%
   select(region, Site, Species, Age, p1, p2, p3, p4, p5) %>% # these pass names may cause problems
   as.data.frame(. , stringsAsFactors = FALSE) 
 colnames(she3) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
+
+
+
+
+
+
+#--- Western Maryland Dataset ---#
+
+# Rearrange data into long format
+df <- wmaryland %>%
+  mutate(trans = paste0(stream, "_", transect)) %>%
+  group_by(trans, stream, transect, visit) %>%
+  tidyr::gather(sp_stage, count, -date, -trans, - stream, -transect, -type, -up_down, -dist, -visit, -time_min, -air, -water, -pH, -DO, -EC, -TDS, -observers) %>%
+  tidyr::separate(sp_stage, into = c("species", "stage"), sep = 4) %>%
+  filter(species != "tota") %>%
+  mutate(type = ifelse(type == "res", up_down, type)) %>%
+  select(date, stream, type, transect, up_down, visit, trans, species, stage, count)
+str(df)
+
+# Convert counts to binary (detection/nondetection)
+df$obs <- df$count
+df[df$obs > 1 & !is.na(df$obs), "obs"] <- 1
+summary(df)
+
+# Remove PRUB from df
+prub <- df[which(df$species == "PRUB"),]
+df2 <- df[-which(df$species == "PRUB"),]
+df <- df2
+
+#--------------------This doesn't work and is trying to get rid of NA's in obs column ----------#
+# Remove rows with NA observations
+#df[complete.cases(df[ ,11]),]
+# na_obs <- df[which(df$obs == "NA"),]
+# df_na <- df[-which(df$obs == "NA"),]
+# df <- df_na
+
+
+
+
+
+
+#--- Combine all salamander data ---#
 
 landscape_N <- bind_rows(can, cap, she3)
 
