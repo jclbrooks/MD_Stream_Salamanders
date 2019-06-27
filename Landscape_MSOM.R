@@ -3,13 +3,13 @@
 ##################
 
 library(dplyr)
-library(tidyr)
 library(lubridate)
 library(readr)
 library(stringr)
 library(devtools)
 
-devtools::install_github("tidyverse/tidyr")
+if(packageVersion("tidyr") < "0.8.3.9000") devtools::install_github("tidyverse/tidyr") # ensure tidyr version with pivot_wider
+
 library(tidyr)
 
 ########################################
@@ -28,16 +28,14 @@ str(shenandoah)
 str(wmaryland)
 
 # Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
-# made all same format, column names
+# make all same format, column names
 
 #--- Canaan Valley National Wildlife Refuge Dataset ---#
 
 can <- canaan %>%
   mutate(Transect = paste(Name, Transect, sep = "_")) %>%
   group_by(Transect, Species, Age) %>%
-  select(Transect, Pass, Species, Age, Caught, Date) %>%
-  mutate(# Pass = paste0("p", Pass),
-         region = "Canaan") 
+  select(Transect, Pass, Species, Age, Caught, Date)
 
 max_pass_can <- can %>%
   ungroup() %>%
@@ -83,7 +81,7 @@ can2 <- combos %>%
 can2 <- can2 %>%
   ungroup() %>%
   group_by(Transect, Date, Species, Age, visit) %>%
-  select(-region) %>%
+  # select(-region) %>%
   mutate(Pass = paste0("p", Pass)) %>%
   dplyr::pivot_wider(names_from = Pass, values_from = Caught) %>%
   mutate(region = "Canaan") %>%
@@ -128,6 +126,9 @@ cap <- cap %>%
          pass4 = as.numeric(pass4),
          age = ifelse(age == "juvenile" | age == "adult", "A", age), # add together
          age = ifelse(age == "larva" | age == "metamorphosing", "L", age)) %>%
+  group_by(region, transect, date, visit, species, age) %>%
+  summarise_all(.funs = sum) %>%
+  ungroup() %>%
   # select(-region) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
 
@@ -157,7 +158,7 @@ cap2 <- combos_cap %>%
   arrange(transect, date, species, age) %>%
   distinct()
 
-# ------------------------------- I think this produces way too many NAs ??? ------------------------ #
+# ------------------------------- need max pass for each transect-date combo to separate 0 from NA  ------------------------ #
 
 
 
