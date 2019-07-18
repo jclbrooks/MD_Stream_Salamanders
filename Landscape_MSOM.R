@@ -223,7 +223,12 @@ she2 <- combos %>%
          Year = 2012) %>%
   arrange(Site, Date, Species, Age, Pass, visit)
 
-# she2 <- she2[-713,]
+she2 <- she2[-2338,]
+
+# Convert counts to binary (detection/nondetection)
+she2$obs <- she2$count
+she2[she2$obs > 1 & !is.na(she2$obs), "obs"] <- 1
+summary(she2)
 # ------------ This needs to be spread into individual passes instead of one pass column ------------------#
 
 
@@ -243,9 +248,11 @@ she3 <- she2 %>%
   mutate(Pass = paste0("p", Pass)) %>%
   spread(Pass, count) %>%
   mutate(region = "Shenandoah") %>%
+  filter(Species != "PCIN") %>%
   select(region, Site, Species, Age, p1, p2, p3, p4, p5) %>% # these pass names may cause problems
   as.data.frame(. , stringsAsFactors = FALSE) 
 colnames(she3) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
+
 
 
 
@@ -260,7 +267,8 @@ df <- wmaryland %>%
   group_by(trans, stream, transect, visit) %>%
   tidyr::gather(sp_stage, count, -date, -trans, - stream, -transect, -type, -up_down, -dist, -visit, -time_min, -air, -water, -pH, -DO, -EC, -TDS, -observers) %>%
   tidyr::separate(sp_stage, into = c("species", "stage"), sep = 4) %>%
-  filter(species != "tota") %>%
+  filter(species != "tota",
+         !is.na(count)) %>%
   mutate(type = ifelse(type == "res", up_down, type)) %>%
   select(date, stream, type, transect, up_down, visit, trans, species, stage, count)
 str(df)
@@ -281,6 +289,7 @@ df <- df2
 # na_obs <- df[which(df$obs == "NA"),]
 # df_na <- df[-which(df$obs == "NA"),]
 # df <- df_na
+
 
 
 
