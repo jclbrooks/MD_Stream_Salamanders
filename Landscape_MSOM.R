@@ -132,6 +132,38 @@ cap <- cap %>%
   # select(-region) %>%
   as.data.frame(. , stringsAsFactors = FALSE) 
 
+
+max_pass_cap <- cap %>%
+  ungroup() %>%
+  pivot_longer(cols = starts_with("pass"), names_to = "pass", values_to = "count") %>%
+  mutate(pass = gsub(pattern = "pass*", replacement = "", x = pass)) %>%
+  filter(!is.na(count)) %>%
+  select(transect, date, visit, pass, count) %>%
+  group_by(transect, date) %>%
+  mutate(max_pass = max(pass)) %>%
+  arrange(transect, visit) %>%
+  ungroup()
+  
+# Not really sure what the visits mean and why there are NAs for visits ????????????????  
+
+max_pass_cap$visit[1] <- 1
+for(i in 2:nrow(max_pass_cap)) {
+  if(max_pass_cap$site[i] == max_pass_cap$site[i-1]) {
+    max_pass_cap$visit[i] <- max_pass_cap$visit[i-1] + 1
+  } else {
+    max_pass_cap$visit[i] <- 1
+  }
+}
+
+just_pass_cap <- max_pass_cap %>%
+  filter(visit == 1)
+
+# filter to just first visit to each site
+# she <- she %>%
+#   filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass_cap$site-date))
+# 
+
+
 combos_cap <- cap %>%
   dplyr::ungroup() %>%
   mutate(species = ifelse(species == "ebis", "EBIS", species)) %>%
@@ -153,10 +185,19 @@ length(unique(paste0(cap$transect, "_", cap$date))) * 5 * 2
 cap2 <- combos_cap %>%
   ungroup() %>%
   left_join(ungroup(cap)) %>%
-  # group_by(Site) %>%
-  #mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
+  #group_by(Site) %>%
+  mutate(count = ifelse(pass <= max_pass & is.na(count), 0, count)) %>%
   arrange(transect, date, species, age) %>%
   distinct()
+
+
+cap3 <- combos_cap %>%
+  left_join(she) %>%
+ # group_by(Site) %>%
+  mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
+         Year = 2012) %>%
+  arrange(Site, Date, Species, Age, Pass, visit)
+
 
 # ------------------------------- need max pass for each transect-date combo to separate 0 from NA  ------------------------ #
 
