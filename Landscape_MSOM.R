@@ -17,10 +17,10 @@ library(tidyr)
 ########################################
 
 # Read in data
-canaan <- read.csv("Data/Landscape/CVNWR_transects.csv", header = T, stringsAsFactors = F)
-capital <- read.csv("Data/Landscape/NCRlotic_all.csv", header = T, stringsAsFactors = F)
-shenandoah <- read.csv("Data/Landscape/Shen_snp12.csv", header = T, stringsAsFactors = FALSE)
-wmaryland <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", header = T, stringsAsFactors = F)
+canaan <- read.csv("Data/Landscape/CVNWR_transects.csv", header = TRUE, stringsAsFactors = FALSE)
+capital <- read.csv("Data/Landscape/NCRlotic_all.csv", header = TRUE, stringsAsFactors = FALSE)
+shenandoah <- read.csv("Data/Landscape/Shen_snp12.csv", header = TRUE, stringsAsFactors = FALSE)
+wmaryland <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", header = TRUE, stringsAsFactors = FALSE)
 
 str(canaan)
 str(capital)
@@ -30,7 +30,7 @@ str(wmaryland)
 # Format data: region - transect ID - species - age - pass/visit 1- pass/visit 2 - pass/visit - 3
 # make all same format, column names
 
-#--- Canaan Valley National Wildlife Refuge Dataset ---#
+#----- Canaan Valley National Wildlife Refuge Dataset -----
 
 can <- canaan %>%
   mutate(Transect = paste(Name, Transect, sep = "_")) %>%
@@ -61,7 +61,7 @@ just_pass <- max_pass_can %>%
 combos <- can %>%
   dplyr::ungroup() %>%
   mutate(Species = ifelse(Species == "DOCR", "DOCH", Species)) %>%
-  tidyr::expand(nesting(Transect, Date, Species),  Age, Pass) %>%
+  tidyr::expand(nesting(Transect, Date), Species, Age, Pass) %>%
   dplyr::filter(Species %in% c("GPOR", "DFUS", "EBIS", "DMON", "DOCH"),
                 Age %in% c("A", "L")) %>%
   dplyr::arrange(Transect, Date, Species, Age, Pass) %>%
@@ -73,6 +73,10 @@ can2 <- combos %>%
   mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
   arrange(Transect, Date, Species, Age, Pass)
 
+# check the size of the combos vs resulting dataframe
+length(unique(paste(can$Transect, can$Date))) * 5 * 2 * 4
+
+
 # Convert counts to binary
 can2$obs <- can2$Caught
 can2[can2$obs > 1 & !is.na(can2$obs), "obs"] <- 1
@@ -83,9 +87,10 @@ summary(can2)
 #--------- need to add date below and check if expanded for species-larvae-*age* combos for each transect -----------#
 ###### It did not spread for all species-age combos at all sites, something wrong with spread(), can't get pivot_wider() to load
 
-can2 <- can2 %>%
+can3 <- can2 %>%
   ungroup() %>%
-  group_by(Transect, Date, Species, Age, visit) %>%
+  select(-visit, -Caught) %>%
+  group_by(Transect, Date, Species, Age) %>%
   # select(-region) %>%
   mutate(Pass = paste0("p", Pass)) %>%
   tidyr::pivot_wider(names_from = Pass, values_from = obs) %>%
@@ -94,18 +99,17 @@ can2 <- can2 %>%
   ungroup() %>%
   mutate(Date = mdy(Date),
          year = year(Date)) %>%
-  select(region, Transect, Date, visit, year, Species, Age, p1, p2, p3, p4) %>%
+  select(region, Transect, Date, year, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
-  arrange(region, Transect, visit, Species, Age)
+  arrange(region, Transect, Species, Age)
 
 # Redo the naming
-colnames(can2) <- c("region", "transect", "date", "visit", "year", "species", "age", "pass1", "pass2", "pass3", "pass4")
+colnames(can3) <- c("region", "transect", "date", "year", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 
 
 
-
-#--- National Capitals Region Dataset _--#
+#------- National Capitals Region Dataset ------
 
 cap <- capital %>%
   mutate(#Transect = paste(PointName, Visit, sep = "_v"),
@@ -142,30 +146,23 @@ max_pass_cap <- cap %>%
   pivot_longer(cols = starts_with("pass"), names_to = "pass", values_to = "count") %>%
   mutate(pass = gsub(pattern = "pass*", replacement = "", x = pass)) %>%
   filter(!is.na(count)) %>%
-  select(transect, date, visit, pass, count) %>%
-  group_by(transect, date, visit) %>%
+  select(transect, date, visit, pass) %>%
+  group_by(transect, date) %>%
   mutate(max_pass = max(pass)) %>%
-  arrange(transect, visit) %>%
+  arrange(transect, date, visit) %>%
+  ungroup() %>%
+  mutate(date = mdy(date),
+         visit_old = as.integer(visit),
+         pass = as.integer(pass),
+         max_pass = as.integer(max_pass)) %>%
+  mutate(year = year(date)) %>%
+  group_by(transect, year, pass) %>%
+  mutate(visit_1 = ifelse(date == min(date), 1, 0)) %>%
+  distinct() %>%
+  arrange(transect, date) %>%
+  filter(visit_1 == 1) %>%
+  select(-visit_old) %>%
   ungroup()
-  
-# ------------------Not really sure what the visits mean and why there are NAs for visits ????????????????  
-
-max_pass_cap$visit[1] <- 1
-for(i in 2:nrow(max_pass_cap)) {
-  if(max_pass_cap$site[i] == max_pass_cap$site[i-1]) {
-    max_pass_cap$visit[i] <- max_pass_cap$visit[i-1] + 1
-  } else {
-    max_pass_cap$visit[i] <- 1
-  }
-}
-
-just_pass_cap <- max_pass_cap %>%
-  filter(visit == 1)
-
-# filter to just first visit to each site
-# she <- she %>%
-#   filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass_cap$site-date))
-# 
 
 
 combos_cap <- cap %>%
@@ -183,14 +180,31 @@ length(unique(paste0(cap$transect, "_", cap$date)))
 length(unique(cap$species))
 length(unique(cap$age))
 
-# desired rows
-length(unique(paste0(cap$transect, "_", cap$date))) * 5 * 2
+# desired rows (before filtering to first visit each year)
+rows_cap <- length(unique(paste0(cap$transect, "_", cap$date))) * 5 * 2
 
 cap2 <- combos_cap %>%
   ungroup() %>%
   left_join(ungroup(cap)) %>%
-  #group_by(Site) %>%
-  mutate(count = ifelse(pass <= max_pass & is.na(count), 0, count)) %>%
+  mutate(date = mdy(date))
+
+rows_cap == nrow(cap2)
+
+visit_passes <- max_pass_cap %>%
+  select(transect, date, max_pass) %>%
+  group_by(transect, date) %>%
+  summarise_all(max) %>%
+  ungroup()
+
+cap3 <- cap2 %>%
+  ungroup() %>%
+  left_join(ungroup(visit_passes)) %>%
+  # filter(pass == 1 | is.na(pass)) %>%
+  mutate(pass1 = ifelse(1 <= max_pass & is.na(pass1), 0, pass1),
+         pass2 = ifelse(2 <= max_pass & is.na(pass2), 0, pass2),
+         pass3 = ifelse(3 <= max_pass & is.na(pass3), 0, pass3),
+         pass4 = ifelse(4 <= max_pass & is.na(pass4), 0, pass4),
+         region = "Capital") %>%
   arrange(transect, date, species, age) %>%
   distinct()
 
