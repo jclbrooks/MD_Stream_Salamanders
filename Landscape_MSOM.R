@@ -73,6 +73,11 @@ can2 <- combos %>%
   mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
   arrange(Transect, Date, Species, Age, Pass)
 
+# Convert counts to binary
+can2$obs <- can2$Caught
+can2[can2$obs > 1 & !is.na(can2$obs), "obs"] <- 1
+summary(can2)
+
 
 
 #--------- need to add date below and check if expanded for species-larvae-*age* combos for each transect -----------#
@@ -83,7 +88,7 @@ can2 <- can2 %>%
   group_by(Transect, Date, Species, Age, visit) %>%
   # select(-region) %>%
   mutate(Pass = paste0("p", Pass)) %>%
-  dplyr::pivot_wider(names_from = Pass, values_from = Caught) %>%
+  tidyr::pivot_wider(names_from = Pass, values_from = obs) %>%
   mutate(region = "Canaan") %>%
   #spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
   ungroup() %>%
@@ -93,9 +98,8 @@ can2 <- can2 %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
   arrange(region, Transect, visit, Species, Age)
 
-
 # Redo the naming
-# colnames(can) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4")
+colnames(can2) <- c("region", "transect", "date", "visit", "year", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 
 
@@ -139,12 +143,12 @@ max_pass_cap <- cap %>%
   mutate(pass = gsub(pattern = "pass*", replacement = "", x = pass)) %>%
   filter(!is.na(count)) %>%
   select(transect, date, visit, pass, count) %>%
-  group_by(transect, date) %>%
+  group_by(transect, date, visit) %>%
   mutate(max_pass = max(pass)) %>%
   arrange(transect, visit) %>%
   ungroup()
   
-# Not really sure what the visits mean and why there are NAs for visits ????????????????  
+# ------------------Not really sure what the visits mean and why there are NAs for visits ????????????????  
 
 max_pass_cap$visit[1] <- 1
 for(i in 2:nrow(max_pass_cap)) {
@@ -191,12 +195,12 @@ cap2 <- combos_cap %>%
   distinct()
 
 
-cap3 <- combos_cap %>%
-  left_join(she) %>%
- # group_by(Site) %>%
-  mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
-         Year = 2012) %>%
-  arrange(Site, Date, Species, Age, Pass, visit)
+# cap3 <- combos_cap %>%
+#   left_join(she) %>%
+#  # group_by(Site) %>%
+#   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
+#          Year = 2012) %>%
+#   arrange(Site, Date, Species, Age, Pass, visit)
 
 
 # ------------------------------- need max pass for each transect-date combo to separate 0 from NA  ------------------------ #
@@ -310,8 +314,8 @@ df <- wmaryland %>%
   tidyr::separate(sp_stage, into = c("species", "stage"), sep = 4) %>%
   filter(species != "tota",
          !is.na(count)) %>%
-  mutate(type = ifelse(type == "res", up_down, type)) %>%
-  select(date, stream, type, transect, up_down, visit, trans, species, stage, count)
+ # mutate(type = ifelse(type == "res", up_down, type)) %>%
+  select(date, stream, transect, visit, trans, species, stage, count)
 str(df)
 
 # Convert counts to binary (detection/nondetection)
@@ -324,12 +328,49 @@ prub <- df[which(df$species == "PRUB"),]
 df2 <- df[-which(df$species == "PRUB"),]
 df <- df2
 
-#--------------------This doesn't work and is trying to get rid of NA's in obs column ----------#
-# Remove rows with NA observations
-#df[complete.cases(df[ ,11]),]
-# na_obs <- df[which(df$obs == "NA"),]
-# df_na <- df[-which(df$obs == "NA"),]
-# df <- df_na
+
+# max_pass_df <- df %>%
+#   ungroup() %>%
+#   group_by(Site, Date) %>%
+#   summarize(max_pass = max(Pass),
+#             visit = NA_integer_) %>%
+#   arrange(trans, date) %>%
+#   ungroup() 
+#   
+
+# max_pass$visit[1] <- 1
+# for(i in 2:nrow(max_pass)) {
+#   if(max_pass$Site[i] == max_pass$Site[i-1]) {
+#     max_pass$visit[i] <- max_pass$visit[i-1] + 1
+#   } else {
+#     max_pass$visit[i] <- 1
+#   }
+# }
+# 
+# just_pass <- max_pass %>%
+#   filter(visit == 1) %>%
+#   select(-Date)
+# 
+# # filter to just first visit to each site
+# she <- she %>%
+#   filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
+# 
+#   #Pass = paste0("p", Pass)
+#   
+# # desired output length for combos
+# length(unique(paste(she$Site, she$Date))) * length(unique(she$Species)) * length(unique(she$Age)) * length(unique(she$Pass))
+# 
+# combos <- she %>%
+#   expand(nesting(Site, Date), Age, Species, Pass) %>%
+#   left_join(just_pass) 
+# 
+# she2 <- combos %>%
+#   left_join(she) %>%
+#  # group_by(Site) %>%
+#   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
+#          Year = 2012) %>%
+#   arrange(Site, Date, Species, Age, Pass, visit)
+
 
 
 
