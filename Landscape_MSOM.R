@@ -223,7 +223,7 @@ cap3 <- cap2 %>%
 
 
 
-#--- Shenandoah National Park Dataset ---#
+#----- Shenandoah National Park Dataset ----
 
 # list <- c(shenandoah$Site, shenandoah$Species, shenandoah$Age)
 # add_count(shenandoah, name = "count")
@@ -305,12 +305,13 @@ summary(she2)
 # spread canaan dataset
 she3 <- she2 %>%
   mutate(Pass = paste0("p", Pass)) %>%
-  spread(Pass, count) %>%
+  select(-max_pass, -visit, -count, -Year) %>%
+  tidyr::pivot_wider(names_from =  Pass, values_from = obs) %>%
   mutate(region = "Shenandoah") %>%
   filter(Species != "PCIN") %>%
-  select(region, Site, Species, Age, p1, p2, p3, p4, p5) %>% # these pass names may cause problems
+  select(region, Site, Date, Species, Age, p1, p2, p3, p4, p5) %>% # these pass names may cause problems
   as.data.frame(. , stringsAsFactors = FALSE) 
-colnames(she3) <- c("region", "transect", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
+colnames(she3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
 
 
 
@@ -329,8 +330,9 @@ df <- wmaryland %>%
   filter(species != "tota",
          !is.na(count)) %>%
  # mutate(type = ifelse(type == "res", up_down, type)) %>%
-  select(date, stream, transect, visit, trans, species, stage, count)
-str(df)
+  select(date, stream, transect, visit, trans, species, stage, count) %>%
+  ungroup()
+
 
 # Convert counts to binary (detection/nondetection)
 df$obs <- df$count
@@ -343,49 +345,59 @@ df2 <- df[-which(df$species == "PRUB"),]
 df <- df2
 
 
-# max_pass_df <- df %>%
-#   ungroup() %>%
-#   group_by(Site, Date) %>%
-#   summarize(max_pass = max(Pass),
-#             visit = NA_integer_) %>%
-#   arrange(trans, date) %>%
-#   ungroup() 
-#   
-
-# max_pass$visit[1] <- 1
-# for(i in 2:nrow(max_pass)) {
-#   if(max_pass$Site[i] == max_pass$Site[i-1]) {
-#     max_pass$visit[i] <- max_pass$visit[i-1] + 1
-#   } else {
-#     max_pass$visit[i] <- 1
-#   }
-# }
-# 
-# just_pass <- max_pass %>%
-#   filter(visit == 1) %>%
-#   select(-Date)
-# 
-# # filter to just first visit to each site
-# she <- she %>%
-#   filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
-# 
-#   #Pass = paste0("p", Pass)
-#   
-# # desired output length for combos
-# length(unique(paste(she$Site, she$Date))) * length(unique(she$Species)) * length(unique(she$Age)) * length(unique(she$Pass))
-# 
-# combos <- she %>%
-#   expand(nesting(Site, Date), Age, Species, Pass) %>%
-#   left_join(just_pass) 
-# 
-# she2 <- combos %>%
-#   left_join(she) %>%
-#  # group_by(Site) %>%
-#   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
-#          Year = 2012) %>%
-#   arrange(Site, Date, Species, Age, Pass, visit)
+max_visit_df <- df %>%
+  ungroup() %>%
+  group_by(stream, transect) %>%
+  summarize(max_pass = max(visit),
+            visit = NA_integer_) %>%
+  ungroup() %>%
+  mutate(trans = paste0(stream, "_", transect))
 
 
+max_visit_df$visit[1] <- 1
+for(i in 2:nrow(max_visit_df)) {
+  if(max_visit_df$trans[i] == max_visit_df$trans[i-1]) {
+    max_visit_df$visit[i] <- max_visit_df$visit[i-1] + 1
+  } else {
+    max_visit_df$visit[i] <- 1
+  }
+}
+
+just_visit <- max_visit_df %>%
+  select(trans, max_pass) 
+colnames(just_visit) <- c("trans", "max_visit")
+
+
+# desired output length for combos
+length(unique(df$trans)) * length(unique(df$species)) * length(unique(df$stage)) * length(unique(df$visit))
+
+combos_df <- df %>%
+  ungroup() %>%
+  select(date, trans, visit, species, stage, obs) %>%
+  expand(nesting(trans), stage, species, visit) %>%
+  left_join(just_visit) %>%
+  select(trans, species, stage, visit, max_visit) %>%
+  arrange(trans, species, stage, visit)
+
+df2 <- combos_df %>%
+  left_join(df) %>%
+  mutate(date = mdy(date)) %>%
+  arrange(trans, species, stage, visit)
+
+# spread dataset
+df3 <- df2 %>%
+  ungroup() %>%
+  mutate(visit = paste0("v", visit)) %>%
+  select(-max_visit, -stream, -transect, -count, -date) %>%
+  tidyr::pivot_wider(names_from =  visit, values_from = obs) %>%
+  mutate(region = "WMaryland") %>%
+  select(region, trans, species, stage, v1, v2, v3, v4) %>% # these are VISITS NOT PASSES
+  as.data.frame(. , stringsAsFactors = FALSE) 
+colnames(df3) <- c("region", "transect", "species", "age", "visit1", "visit2", "visit3", "visit4")
+
+# array with matching dates and transect-visit, not sure if this is needed yet.....
+date_df <- df %>%
+  select(date, trans, visit)
 
 
 
