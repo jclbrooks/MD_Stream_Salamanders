@@ -33,7 +33,9 @@ str(wmaryland)
 #----- Canaan Valley National Wildlife Refuge Dataset -----
 
 can <- canaan %>%
-  mutate(Transect = paste(Name, Transect, sep = "_")) %>%
+  mutate(Transect = ifelse(is.na(Transect), 0, Transect),
+         Transect = paste0(Name, Transect),
+         Date = mdy(Date)) %>%
   group_by(Transect, Species, Age) %>%
   select(Transect, Pass, Species, Age, Caught, Date)
 
@@ -97,8 +99,7 @@ can3 <- can2 %>%
   mutate(region = "Canaan") %>%
   #spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
   ungroup() %>%
-  mutate(Date = mdy(Date),
-         year = year(Date)) %>%
+  mutate(year = year(Date)) %>%
   select(region, Transect, Date, year, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
   arrange(region, Transect, Species, Age)
@@ -323,7 +324,16 @@ colnames(she3) <- c("region", "transect", "date", "species", "age", "pass1", "pa
 
 # Rearrange data into long format
 df <- wmaryland %>%
-  mutate(trans = paste0(stream, "_", transect)) %>%
+  mutate(stream = ifelse(stream == "POPLICKTRIB", "PopLick", stream),
+         stream = ifelse(stream == "ALEX", "Alexander Run", stream),
+         stream = ifelse(stream == "ELKLICK", "ElkLick", stream),
+         stream = ifelse(stream == "MILL", "Mill", stream),
+         stream = ifelse(stream == "BLUELICK", "BlueLick", stream),
+         stream = ifelse(stream == "WSHALEN", "West Shale North", stream),
+         stream = ifelse(stream == "KOCH", "Koch", stream),
+         stream = ifelse(stream == "DUNGHILL", "Bowser-Dung Hill", stream),
+         stream = ifelse(stream == "BEARHILL", "Maynardier Ridge at Bear Hill", stream),
+         trans = paste0(stream, "_", transect)) %>%
   group_by(trans, stream, transect, visit) %>%
   tidyr::gather(sp_stage, count, -date, -trans, - stream, -transect, -type, -up_down, -dist, -visit, -time_min, -air, -water, -pH, -DO, -EC, -TDS, -observers) %>%
   tidyr::separate(sp_stage, into = c("species", "stage"), sep = 4) %>%
@@ -406,7 +416,7 @@ date_df <- df %>%
 
 #--- Combine all salamander data ---#
 
-landscape_N <- bind_rows(can, cap, she3)
+landscape_N <- bind_rows(can3, cap3, she3)
 
 ##### Like Shen replace the NA if <= max pass with 0 #####
 
