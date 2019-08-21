@@ -99,15 +99,13 @@ can3 <- can2 %>%
   mutate(region = "Canaan") %>%
   #spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
   ungroup() %>%
-  mutate(year = year(Date),
-         pass5 = NA,
-         pass5 = as.double(pass5)) %>%
-  select(region, Transect, Date, Species, Age, p1, p2, p3, p4, pass5) %>%
+  mutate(year = year(Date)) %>%
+  select(region, Transect, Date, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
   arrange(region, Transect, Species, Age)
 
 # Redo the naming
-colnames(can3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
+colnames(can3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 
 
@@ -207,12 +205,10 @@ cap3 <- cap2 %>%
          pass2 = ifelse(2 <= max_pass & is.na(pass2), 0, pass2),
          pass3 = ifelse(3 <= max_pass & is.na(pass3), 0, pass3),
          pass4 = ifelse(4 <= max_pass & is.na(pass4), 0, pass4),
-         region = "Capital",
-         pass5 = NA,
-         pass5 = as.double(pass5)) %>%
+         region = "Capital") %>%
   arrange(transect, date, species, age) %>%
   distinct() %>%
-  select(region, transect, date, species, age, pass1, pass2, pass3, pass4, pass5)
+  select(region, transect, date, species, age, pass1, pass2, pass3, pass4)
 
 
 # cap3 <- combos_cap %>%
@@ -407,11 +403,9 @@ df3 <- df2 %>%
   tidyr::pivot_wider(names_from =  visit, values_from = obs) %>%
   mutate(region = "WMaryland") %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
-  mutate(date = NA,
-         pass5 = NA,
-         pass5 = as.double(pass5)) %>%
-   select(region, trans, date, species, stage, v1, v2, v3, v4, pass5) # these are VISITS NOT PASSES
-colnames(df3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
+  mutate(date = NA) %>%
+   select(region, trans, date, species, stage, v1, v2, v3, v4) # these are VISITS NOT PASSES
+colnames(df3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
 # array with matching dates and transect-visit, not sure if this is needed yet.....
 date_df <- df %>%
@@ -442,18 +436,16 @@ landscape_occ <- landscape_N %>%
          age = ifelse(age == "juvenile" | age == "recently metamorphosed" | age == "adult" | age == "metamorphosing", "A", age),
          age = ifelse(age == "" | age == "  ", NA, age),
          age = ifelse(age == "larva", "L", age)) %>%
-  filter(species %in% spec) %>%
-  mutate(transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 5), transect),
-         transect = ifelse(transect == "Camp 70-Yellow Creek_NA", "Camp 70-Yellow Creek", transect),
-         transect = ifelse(region == "Canaan", gsub(pattern = "*_", replacement = "", x = transect), transect),
+  filter(species %in% spec,
+         !transect %in% c("MRC2T1", "PR300", "MRC3TL"),
+         !transect %in% c("Cortland1", "Picnic 21-1", "Picnic 21-2")) %>% # this line needs to be deleted when the csv is fixed
+  mutate(#transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 5), transect),
+         #transect = ifelse(transect == "Camp 70-Yellow Creek_NA", "Camp 70-Yellow Creek", transect),
+         #transect = ifelse(region == "Canaan", gsub(pattern = "*_", replacement = "", x = transect), transect),
          #transect = ifelse(region == "Capital", substr(transect, 1, nchar(transect) - 3), transect),
          transect = ifelse(region == "Capital", gsub(pattern = "_v.$", replacement = "", x = transect), transect),
          transect = ifelse(region == "Capital", gsub(pattern = "_vNULL", replacement = "", x = transect), transect))
 
-unique(landscape_occ[,1:2])
-unique(landscape_characteristics[,1:2])
-unique(landscape_occ$transect)
-unique(landscape_characteristics$transect)
 
 
 ########################################
@@ -478,7 +470,7 @@ landscape_characteristics <- landscape_characteristics %>%
          transect = ifelse(region == "Canaan", gsub(pattern = "*_.*_", replacement = "", x = transect), transect)#,
          #transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 7), transect)
          )
-  
+
 
 ################# Pick variables to potentially use ##########
 vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
@@ -492,8 +484,8 @@ landscape_vars <- landscape_characteristics %>%
   # pivot_wider(names_from = variable, values_from = value, values_fill = NA)
   spread(key = variable, value = value)
 
- modeldata <- landscape_occ %>%
-   left_join(landscape_vars)
+ # modeldata <- landscape_occ %>%
+ #   left_join(landscape_vars)
 
 modeldata <- landscape_vars %>%
   right_join(landscape_occ)
@@ -505,7 +497,14 @@ unique(landscape_occ$transect) %in% unique(landscape_vars$transect)
 
 unique(landscape_occ$transect)[!(unique(landscape_occ$transect) %in% unique(landscape_vars$transect))] # names of transects in the occupancy that are not in landscape variables
 
+unique(landscape_occ[,1:2])
+unique(landscape_characteristics[,1:2])
+length(unique(paste(landscape_characteristics[,1], landscape_characteristics[,2])))
+unique_char <- unique(landscape_characteristics[,1:2])
+unique(landscape_occ$transect)
+unique(landscape_characteristics$transect)
 
+unique_char == unique(landscape_occ[,1:2])
 
 
 
