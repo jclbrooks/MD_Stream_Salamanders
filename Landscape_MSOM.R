@@ -99,13 +99,15 @@ can3 <- can2 %>%
   mutate(region = "Canaan") %>%
   #spread(Pass, Caught) %>%  #### This doesn't spread correctly, it leaves out some species that need to be at all sites (even if not found)
   ungroup() %>%
-  mutate(year = year(Date)) %>%
-  select(region, Transect, Date, year, Species, Age, p1, p2, p3, p4) %>%
+  mutate(year = year(Date),
+         pass5 = NA,
+         pass5 = as.double(pass5)) %>%
+  select(region, Transect, Date, Species, Age, p1, p2, p3, p4, pass5) %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
   arrange(region, Transect, Species, Age)
 
 # Redo the naming
-colnames(can3) <- c("region", "transect", "date", "year", "species", "age", "pass1", "pass2", "pass3", "pass4")
+colnames(can3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
 
 
 
@@ -205,9 +207,12 @@ cap3 <- cap2 %>%
          pass2 = ifelse(2 <= max_pass & is.na(pass2), 0, pass2),
          pass3 = ifelse(3 <= max_pass & is.na(pass3), 0, pass3),
          pass4 = ifelse(4 <= max_pass & is.na(pass4), 0, pass4),
-         region = "Capital") %>%
+         region = "Capital",
+         pass5 = NA,
+         pass5 = as.double(pass5)) %>%
   arrange(transect, date, species, age) %>%
-  distinct()
+  distinct() %>%
+  select(region, transect, date, species, age, pass1, pass2, pass3, pass4, pass5)
 
 
 # cap3 <- combos_cap %>%
@@ -398,12 +403,15 @@ df2 <- combos_df %>%
 df3 <- df2 %>%
   ungroup() %>%
   mutate(visit = paste0("v", visit)) %>%
-  select(-max_visit, -stream, -transect, -count, -date) %>%
+  select(-max_visit, -stream, -transect, -count, -date) %>% # did not include date because it separates the counts into separate rows for each visit because each visit was done on a different day
   tidyr::pivot_wider(names_from =  visit, values_from = obs) %>%
   mutate(region = "WMaryland") %>%
-  select(region, trans, species, stage, v1, v2, v3, v4) %>% # these are VISITS NOT PASSES
-  as.data.frame(. , stringsAsFactors = FALSE) 
-colnames(df3) <- c("region", "transect", "species", "age", "visit1", "visit2", "visit3", "visit4")
+  as.data.frame(. , stringsAsFactors = FALSE) %>%
+  mutate(date = NA,
+         pass5 = NA,
+         pass5 = as.double(pass5)) %>%
+   select(region, trans, date, species, stage, v1, v2, v3, v4, pass5) # these are VISITS NOT PASSES
+colnames(df3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
 
 # array with matching dates and transect-visit, not sure if this is needed yet.....
 date_df <- df %>%
@@ -416,7 +424,7 @@ date_df <- df %>%
 
 #--- Combine all salamander data ---#
 
-landscape_N <- bind_rows(can3, cap3, she3)
+landscape_N <- bind_rows(can3, cap3, she3, df3)
 
 ##### Like Shen replace the NA if <= max pass with 0 #####
 
