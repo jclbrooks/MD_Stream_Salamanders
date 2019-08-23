@@ -416,7 +416,7 @@ date_df <- df %>%
 
 
 
-#--- Combine all salamander data ---#
+#---- Combine all salamander data -----
 
 landscape_N <- bind_rows(can3, cap3, she3, df3)
 
@@ -433,18 +433,27 @@ landscape_occ <- landscape_N %>%
          canaan = ifelse(region == "Canaan", 1, 0),
          capital = ifelse(region == "Capital", 1, 0),
          shenandoah = ifelse(region == "Shenandoah", 1, 0),
+         wmaryland = ifelse(region == "wmaryland", 1, 0),
          age = ifelse(age == "juvenile" | age == "recently metamorphosed" | age == "adult" | age == "metamorphosing", "A", age),
          age = ifelse(age == "" | age == "  ", NA, age),
          age = ifelse(age == "larva", "L", age)) %>%
   filter(species %in% spec,
-         !transect %in% c("MRC2T1", "PR300", "MRC3TL"),
+         !transect %in% c("MRC2T1", "PR300", "MRC3TL", "PR"),
          !transect %in% c("Cortland1", "Picnic 21-1", "Picnic 21-2")) %>% # this line needs to be deleted when the csv is fixed
   mutate(#transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 5), transect),
          #transect = ifelse(transect == "Camp 70-Yellow Creek_NA", "Camp 70-Yellow Creek", transect),
          #transect = ifelse(region == "Canaan", gsub(pattern = "*_", replacement = "", x = transect), transect),
          #transect = ifelse(region == "Capital", substr(transect, 1, nchar(transect) - 3), transect),
          transect = ifelse(region == "Capital", gsub(pattern = "_v.$", replacement = "", x = transect), transect),
-         transect = ifelse(region == "Capital", gsub(pattern = "_vNULL", replacement = "", x = transect), transect))
+         transect = ifelse(region == "Capital", gsub(pattern = "_vNULL", replacement = "", x = transect), transect),
+         stream = transect) %>%
+  separate(col = "transect", into = c("transect", "transect#"), sep = "_")
+## WARNING: HARMLESS - just says that there are a lot of NAs filled into the stream column because it is conditional on the region = "wmaryland"
+
+# Remove "PR" transect from landscape_occ (wasn't working in line 441)
+landscape_occ_pr <- landscape_occ[-which(landscape_occ$transect == "PR"),]
+landscape_occ <- landscape_occ_pr
+
 
 
 
@@ -470,7 +479,8 @@ landscape_characteristics <- landscape_characteristics %>%
          transect = ifelse(region == "Canaan", gsub(pattern = "*_.*_", replacement = "", x = transect), transect)#,
          #transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 7), transect)
          )
-
+ 
+# changes colname "transect" to "stream" to match landscape_occ
 
 ################# Pick variables to potentially use ##########
 vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
@@ -499,12 +509,10 @@ unique(landscape_occ$transect)[!(unique(landscape_occ$transect) %in% unique(land
 
 unique(landscape_occ[,1:2])
 unique(landscape_characteristics[,1:2])
-length(unique(paste(landscape_characteristics[,1], landscape_characteristics[,2])))
-unique_char <- unique(landscape_characteristics[,1:2])
-unique(landscape_occ$transect)
-unique(landscape_characteristics$transect)
-
-unique_char == unique(landscape_occ[,1:2])
+# length(unique(paste(landscape_characteristics[,1], landscape_characteristics[,2])))
+# unique_char <- unique(landscape_characteristics[,1:2])
+# unique(landscape_occ$transect)
+# unique(landscape_characteristics$transect)
 
 
 
