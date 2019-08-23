@@ -60,7 +60,7 @@ for(i in 2:nrow(max_pass_can)) {
 just_pass <- max_pass_can %>%
   filter(visit == 1)
 
-combos <- can %>%
+combos_can <- can %>%
   dplyr::ungroup() %>%
   mutate(Species = ifelse(Species == "DOCR", "DOCH", Species)) %>%
   tidyr::expand(nesting(Transect, Date), Species, Age, Pass) %>%
@@ -69,13 +69,13 @@ combos <- can %>%
   dplyr::arrange(Transect, Date, Species, Age, Pass) %>%
   dplyr::left_join(max_pass_can) 
 
-can2 <- combos %>%
+can2 <- combos_can %>%
   left_join(can) %>%
   # group_by(Site) %>%
   mutate(Caught = ifelse(Pass <= max_pass & is.na(Caught), 0, Caught)) %>%
   arrange(Transect, Date, Species, Age, Pass)
 
-# check the size of the combos vs resulting dataframe
+# check the size of the combos_can vs resulting dataframe
 length(unique(paste(can$Transect, can$Date))) * 5 * 2 * 4
 
 
@@ -270,14 +270,14 @@ just_pass <- max_pass %>%
 
   #Pass = paste0("p", Pass)
   
-# desired output length for combos
+# desired output length for combos_she
 length(unique(paste(she$Site, she$Date))) * length(unique(she$Species)) * length(unique(she$Age)) * length(unique(she$Pass))
 
-combos <- she %>%
+combos_she <- she %>%
   expand(nesting(Site, Date), Age, Species, Pass) %>%
   left_join(just_pass) 
 
-she2 <- combos %>%
+she2 <- combos_she %>%
   left_join(she) %>%
  # group_by(Site) %>%
   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
@@ -367,7 +367,7 @@ just_visit <- max_visit_df %>%
 colnames(just_visit) <- c("trans", "max_visit")
 
 
-# desired output length for combos
+# desired output length for combos_df
 length(unique(df$trans)) * length(unique(df$species)) * length(unique(df$stage)) * length(unique(df$visit))
 
 combos_df <- df %>%
