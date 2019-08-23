@@ -265,8 +265,8 @@ just_pass <- max_pass %>%
   select(-Date)
 
 # filter to just first visit to each site
-she <- she %>%
-  filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
+# she <- she %>%
+#   filter(visit == 1) # filter combo site-date in just pass one filter(site-date %in% unique(max_pass$site-date))
 
   #Pass = paste0("p", Pass)
   
