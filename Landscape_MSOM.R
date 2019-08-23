@@ -426,8 +426,7 @@ landscape_occ <- landscape_N %>%
          age = ifelse(age == "" | age == "  ", NA, age),
          age = ifelse(age == "larva", "L", age)) %>%
   filter(species %in% spec,
-         !transect %in% c("MRC2T1", "PR300", "MRC3TL", "PR"),
-         !transect %in% c("Cortland1", "Picnic 21-1", "Picnic 21-2")) %>% # this line needs to be deleted when the csv is fixed
+         !transect %in% c("MRC2T1", "PR300", "MRC3TL", "PR")) %>% 
   mutate(#transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 5), transect),
          #transect = ifelse(transect == "Camp 70-Yellow Creek_NA", "Camp 70-Yellow Creek", transect),
          #transect = ifelse(region == "Canaan", gsub(pattern = "*_", replacement = "", x = transect), transect),
