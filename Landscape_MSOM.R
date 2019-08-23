@@ -110,7 +110,7 @@ colnames(can3) <- c("region", "transect", "date", "species", "age", "pass1", "pa
 
 
 
-#------- National Capitals Region Dataset ------
+#----- National Capitals Region Dataset ------
 
 cap <- capital %>%
   mutate(#Transect = paste(PointName, Visit, sep = "_v"),
@@ -290,18 +290,6 @@ she2 <- she2[-2338,]
 she2$obs <- she2$count
 she2[she2$obs > 1 & !is.na(she2$obs), "obs"] <- 1
 summary(she2)
-# ------------ This needs to be spread into individual passes instead of one pass column ------------------#
-
-
-#------------- Repeat this for cannan and NCR -----------
-
-
-
-
-######################
-# ROW 713 AND 714 NEED TO BE COMBINED? OR 713 NEEDS TO BE DELETED
-######################
-
 
 
 # spread canaan dataset
@@ -321,7 +309,7 @@ colnames(she3) <- c("region", "transect", "date", "species", "age", "pass1", "pa
 
 
 
-#--- Western Maryland Dataset ---#
+#----- Western Maryland Dataset ----
 
 # Rearrange data into long format
 df <- wmaryland %>%
@@ -416,11 +404,11 @@ date_df <- df %>%
 
 
 
-#---- Combine all salamander data -----
+#----- Combine all salamander occ data -----
 
 landscape_N <- bind_rows(can3, cap3, she3, df3)
 
-##### Like Shen replace the NA if <= max pass with 0 #####
+##### Like Shen replace the NA if <= max pass with 0 
 
 spec <- c("DMON", "DOCH", "GPOR", "DFUS", "DOCR", "EBIS", "PRUB", "ELON", "EGUT")
 
@@ -457,9 +445,8 @@ landscape_occ <- landscape_occ_pr
 
 
 
-########################################
-##### LANDSCAPE CHARACTERISTICS ########
-########################################
+
+#----- Format Landscape Characteristics Data ----
 
 huc02_landscape <- read_csv("landscape_characteristics/HUC02_sites_landscape_characteristics.csv")
 # National Capitals Region, Shenandoah, and W MD reference streams
@@ -482,7 +469,7 @@ landscape_characteristics <- landscape_characteristics %>%
  
 # changes colname "transect" to "stream" to match landscape_occ
 
-################# Pick variables to potentially use ##########
+#-----Pick variables to potentially use ----
 vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
 
 landscape_vars <- landscape_characteristics %>%
