@@ -32,7 +32,11 @@ cvnwr <- read.csv("landscape_characteristics/CVNWR_catchments_intersect.csv", he
 restored <- read.csv("landscape_characteristics/MDE_Salamander_Sites_catchments_intersect.csv", header = T, stringsAsFactors = F)  
 ncrlotic <- read.csv("landscape_characteristics/NCR_catchments_intersect.csv", header = T, stringsAsFactors = F) 
 shenandoah <- read.csv("landscape_characteristics/Shenandoah_catchments_intersect.csv", header = T, stringsAsFactors = F)
-reference <-  read.csv("landscape_characteristics/Sites_catchment_intersect.csv", header = T, stringsAsFactors = F)  
+reference <-  read.csv("landscape_characteristics/Sites_catchment_intersect.csv", header = T, stringsAsFactors = F)
+picnic_HUC02 <-  read.csv("landscape_characteristics/picnic_21-2_featureid_HUC02.csv", header = T, stringsAsFactors = F)
+cortland1_HUC05 <-  read.csv("landscape_characteristics/cortland1_featureid_HUC05.csv", header = T, stringsAsFactors = F)
+
+
 
 
 # Re-structure data
@@ -71,13 +75,25 @@ reference <- reference %>%
   select(unit, Id, FEATUREID)
 colnames(reference) <- c("region", "transect", "featureid")
 
+str(picnic_HUC02)
+picnic_HUC02 <- picnic_HUC02 %>%
+  select(region, site, FEATUREID)
+colnames(picnic_HUC02) <- c("region", "transect", "featureid")
+
+str(cortland1_HUC05)
+cortland1_HUC05 <- cortland1_HUC05[1,] %>%
+  mutate(site = ifelse(site == "Cortland-1", "Cortland_xxxx_1", site)) %>%
+  select(region, site, FEATUREID)
+colnames(cortland1_HUC05) <- c("region", "transect", "featureid")
+  
+
 
 #Bind data all together
-landscape02 <- bind_rows(ncrlotic, shenandoah, reference)
+landscape02 <- bind_rows(ncrlotic, picnic_HUC02, shenandoah, reference)
 head(landscape02)
 tail(landscape02)
 
-landscape05 <- bind_rows(cvnwr, restored)
+landscape05 <- bind_rows(cvnwr, cortland1_HUC05, restored)
 head(landscape05)
 tail(landscape05)
 
@@ -139,8 +155,8 @@ str(combine02)
 str(landscape02)
 combine02$variable
 
-#write.csv(combine02, "landscape_characteristics/HUC02_sites_landscape_characteristics.csv")
-#write.csv(combine05, "landscape_characteristics/HUC05_sites_landscape_characteristics.csv")
+# write.csv(combine02, "landscape_characteristics/HUC02_sites_landscape_characteristics.csv")
+# write.csv(combine05, "landscape_characteristics/HUC05_sites_landscape_characteristics.csv")
 
 
 
