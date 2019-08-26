@@ -8,7 +8,7 @@ library(readr)
 library(stringr)
 library(devtools)
 
-if(packageVersion("tidyr") < "0.8.3.9000") devtools::install_github("tidyverse/tidyr") # ensure tidyr version with pivot_wider
+if(packageVersion("tidyr") < "0.8.99.9000") devtools::install_github("tidyverse/tidyr") # ensure tidyr version with pivot_wider
 
 library(tidyr)
 
@@ -102,12 +102,14 @@ can3 <- can2 %>%
   mutate(year = year(Date)) %>%
   select(region, Transect, Date, Species, Age, p1, p2, p3, p4) %>%
   as.data.frame(. , stringsAsFactors = FALSE) %>%
-  arrange(region, Transect, Species, Age)
+  arrange(region, Transect, Date, Species, Age)
 
 # Redo the naming
 colnames(can3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4")
 
-
+# Save detailed occupancy data for canaan
+if(!dir.exists("Data/Derived")) dir.create("Data/Derived", recursive = TRUE)
+saveRDS(can3, "Data/Derived/canaan_detailed_occ.rds")
 
 
 #----- National Capitals Region Dataset ------
@@ -210,6 +212,13 @@ cap3 <- cap2 %>%
   distinct() %>%
   select(region, transect, date, species, age, pass1, pass2, pass3, pass4)
 
+# reduce from counts to occupancy
+cap4 <- cap3 %>%
+mutate(pass1 = ifelse(pass1 >= 1, 1, pass1),
+       pass2 = ifelse(pass2 >= 1, 1, pass2),
+       pass3 = ifelse(pass3 >= 1, 1, pass3),
+       pass4 = ifelse(pass4 >= 1, 1, pass4),
+       date = ymd(date))
 
 # cap3 <- combos_cap %>%
 #   left_join(she) %>%
@@ -217,6 +226,10 @@ cap3 <- cap2 %>%
 #   mutate(count = ifelse(Pass <= max_pass & is.na(count), 0, count),
 #          Year = 2012) %>%
 #   arrange(Site, Date, Species, Age, Pass, visit)
+
+
+# Save detailed occupancy data for the national capitals region
+saveRDS(cap3, "Data/Derived/ncr_detailed_occ.rds")
 
 
 # ------------------------------- need max pass for each transect-date combo to separate 0 from NA  ------------------------ #
@@ -304,7 +317,8 @@ she3 <- she2 %>%
 colnames(she3) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5")
 
 
-
+# Save detailed occupancy data for the national capitals region
+saveRDS(she3, "Data/Derived/shen_detailed_occ.rds")
 
 
 
