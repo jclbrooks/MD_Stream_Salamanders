@@ -43,14 +43,20 @@ library(jagsUI)
 
 testing <- TRUE
 if(testing) {
+  na = 100
   nb = 500
   ni = 500 + nb
   nt = 1
+  nc = 1
 } else {
-  nb = 10000
-  ni = 40000
-  nt = 10
+  na = 500
+  nb = 1000
+  ni = 4000
+  nt = 4
+  nc = 3
 }
+
+dfus_3d <- readRDS("Data/Derived/dfus_3d.rds")
 
 # make data list for JAGS
 dfus_data <- list(y = dfus_3d, 
@@ -189,6 +195,11 @@ out
 plot(out)
 
 
+#------------ psi and p can't both have means that vary randomly ---------
+# vary p randomly
+# psi fixed mean prob (intercept) that only varies by region
+# problem if p varies randomly by site and pass
+
 sink("Code/JAGS/dynamic_autologistic_occ.txt")
 cat("
     model {
@@ -196,16 +207,16 @@ cat("
       # Priors    
       
       mu_psi ~ dnorm(0, pow(2, -2))
-      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, )
+      sd_psi ~ dt(0, pow(1,-2), 1)T(0, )
       
       mu_p ~ dnorm(0, pow(2, -2))
-      sd_p ~ dt(0, pow(2.5,-2), 1)T(0, )
+      sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
       
       # doesn't work with random effects by site and year on b0 and b1
-      mu_b0 ~ dnorm(0, pow(3, -2))
+      mu_b0 ~ dnorm(0, pow(2, -2))
       sd_b0 ~ dt(0, pow(1,-2), 1)T(0, )
       
-      mu_b1 ~ dnorm(0, pow(3, -2))
+      mu_b1 ~ dnorm(0, pow(2, -2))
       sd_b1 ~ dt(0, pow(1,-2), 1)T(0, )
       
       for(i in 1:n_sites) {
@@ -213,12 +224,16 @@ cat("
         logit(psi1[i]) <- logit_psi1[i] 
       }
       
+      a0_p ~ dnorm(0, pow(2, -2))
+      a1 ~ dnorm(-1, pow(2, -2))  # behavioral effect for reduced detect with removal
       for(i in 1:n_sites) {
+        # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
-          a0_p[i,t] ~ dnorm(mu_p, sd_p)
-          logit(p[i,t]) <- a0_p[i,t]
+          for(j in 1:n_passes) {
+          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates
+          }
         }
-      }
+      } 
       
       # colonization and extinction not separable with data with both as random effects
       # for(i in 1:n_sites) {
@@ -247,7 +262,7 @@ cat("
       for(i in 1:n_sites) {
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-            mu_y[i,j,t] <- Z[i, t] * p[i,t]
+            mu_y[i,j,t] <- Z[i, t] * p[i,j,t]
             y[i,j,t] ~ dbern(mu_y[i,j,t])
           }
         }
@@ -255,10 +270,16 @@ cat("
       
       # Derived parameters?
       mean_psi <- mean(psi1[ ])
-      mean_p <- mean(p[ , ])
+      mean_p <- mean(p[ , 1, ])
       
-      # for(t in 1:n_years) {
-        # Z_sum[t] <- sum(Z[ , t])
+      for(t in 1:n_years) {
+      Z_sum[t] <- sum(Z[ , t])
+      }
+      
+      # for(i in 1:n_sites) {
+        for(t in 2:n_years) {
+          turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
+        }
       # }
       
       } # end model
@@ -287,6 +308,8 @@ inits <- function(){
 params <- c(# "Z",
   "mean_psi",
   "mean_p",
+  "a0_p",
+  "a1",
   "mu_p",
   "sd_p",
   "mu_psi",
@@ -295,7 +318,8 @@ params <- c(# "Z",
   "mu_b0",
   "mu_b1",
   "sd_b0",
-  "sd_b1")
+  "sd_b1",
+  "turnover")
 
 out <- jags(data = dfus_data,
             inits = inits,
@@ -320,6 +344,7 @@ plot(out)
 
 
 # from Royle and Dorazio page 314
+
 
 sink("Code/JAGS/dynamic_occ.txt")
 cat("
@@ -497,3 +522,104 @@ plot(out, parameters = c("p"))
 
 
 
+
+####### - static with correlation by site --------
+
+sink("Code/JAGS/static_occ.txt")
+cat("
+    model {
+      
+      # Priors    
+      
+      mu_psi ~ dnorm(0, pow(2, -2))
+      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, )
+      
+      mu_p ~ dnorm(0, pow(2, -2))
+      sd_p ~ dt(0, pow(2.5,-2), 1)T(0, )
+      
+      # doesn't work with random effects by site and year on b0 and b1
+      mu_b0 ~ dnorm(0, pow(3, -2))
+      sd_b0 ~ dt(0, pow(1,-2), 1)T(0, )
+      
+      mu_b1 ~ dnorm(0, pow(3, -2))
+      sd_b1 ~ dt(0, pow(1,-2), 1)T(0, )
+      
+      for(i in 1:n_sites) {
+        logit_psi1[i] ~ dnorm(mu_psi, sd_psi)
+        logit(psi1[i]) <- logit_psi1[i] 
+      }
+      
+      for(i in 1:n_sites) {
+        for(t in 1:n_years) {
+          a0_p[i,t] ~ dnorm(mu_p, sd_p)
+          logit(p[i,t]) <- a0_p[i,t]
+        }
+      }
+      
+      # colonization and extinction not separable with data with both as random effects
+      for(i in 1:n_sites) {
+        # for(t in 1:(n_years - 1)) {
+          b0[i] ~ dnorm(mu_b0, 1/ sd_b0 / sd_b0) # colonization prob
+          # b1[i,t] ~ dnorm(mu_b1, 1 / sd_b1 / sd_b1) # survival prob
+        }
+      # }
+      
+      # consider fixed effect by region
+        for(t in 1:(n_years - 1)) {
+          # b0[t] ~ dnorm(mu_b0, pow(sd_b0, -2)) # colonization prob
+          b1[t] ~ dnorm(mu_b1, pow(sd_b1, -2)) # survival prob
+        }
+      
+      # Process model
+      for(i in 1:n_sites) { # sites or transects or streams?
+        Z[i, 1] ~ dbern(psi1[i])
+        for(t in 2:n_years) {
+          logit(mu_Z[i, t]) <- b0[i] + b1[t-1] # * Z[i, t-1] # b0[i, t-1] + b1[i, t-1] * Z[i, t-1] # + b2 * region[i] + b3 * forest[i] + b4 * temp[i] + b5 * region[i] * Z[i, t-1] + b6 * forest[i] * Z[i, t-1] + b7 * temp[i] * Z[i, t-1] # random stream or HUC
+          Z[i, t] ~ dbern(mu_Z[i, t])
+        }
+      }
+      
+      # Observation model - need to separate for visits vs. passes
+      for(i in 1:n_sites) {
+        for(t in 1:n_years) {
+          for(j in 1:n_passes) {
+            mu_y[i,j,t] <- Z[i, t] * p[i,t]
+            y[i,j,t] ~ dbern(mu_y[i,j,t])
+          }
+        }
+      }
+      
+      # Derived parameters?
+      mean_psi <- mean(psi1[ ])
+      mean_p <- mean(p[ , ])
+      
+      # for(t in 1:n_years) {
+        # Z_sum[t] <- sum(Z[ , t])
+      # }
+      
+      } # end model
+
+    ", fill=TRUE)
+sink()
+
+params <- c(# "Z",
+  "p",
+  "mu_psi",
+  "sd_psi",
+  "mu_b0",
+  "sd_b0")
+
+out <- jags(data = dfus_data,
+            inits = inits,
+            parameters.to.save = params,
+            model.file = "Code/JAGS/static_occ.txt",
+            n.chains = 3,
+            # n.adapt = 100,
+            n.iter = ni,
+            n.burnin = nb,
+            n.thin = nt, 
+            parallel = TRUE,
+            n.cores = 3)
+
+# Results
+out
