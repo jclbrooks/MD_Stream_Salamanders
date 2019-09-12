@@ -1,5 +1,7 @@
 # from Royle and Dorazio page 314
 
+##### Simple Dynamic Occupancy #####
+
 sink("Code/JAGS/dynamic_occ_simple.txt")
 cat("
     model {
@@ -101,7 +103,7 @@ if(!dir.exists("Results/JAGS")) dir.create("Results/JAGS", recursive = TRUE)
 # saveRDS(pjor_od, file = "Results/JAGS/pjor_mcmc_out.rds")
 
 
-
+##### Simple autologistic occupancy #####
 
 sink("Code/JAGS/dynamic_autologistic_occ_simple.txt")
 cat("
@@ -195,8 +197,10 @@ out
 plot(out)
 
 
-#------------ psi and p can't both have means that vary randomly ---------
-# vary p randomly
+##### Autologistic Occupancy ######
+
+# psi and p can't both have means (intercepts) that vary randomly
+# vary p randomly?
 # psi fixed mean prob (intercept) that only varies by region
 # problem if p varies randomly by site and pass
 
@@ -210,7 +214,7 @@ cat("
       sd_psi ~ dt(0, pow(1,-2), 1)T(0, )
       
       mu_p ~ dnorm(0, pow(2, -2))
-      sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
+      sd_p ~ dt(0, pow(1.3,-2), 1)T(0, )
       
       # doesn't work with random effects by site and year on b0 and b1
       mu_b0 ~ dnorm(0, pow(2, -2))
@@ -291,9 +295,9 @@ sink()
 
 # make data list for JAGS
 dfus_data <- list(y = dfus_3d, 
-                  n_sites = n_sites, 
-                  n_passes = n_passes,
-                  n_years = n_years)
+                  n_sites = dim(dfus_3d)[1], 
+                  n_passes = dim(dfus_3d)[2],
+                  n_years = dim(dfus_3d)[3])
 
 # Good starting values for occupancy = max over passes
 dfus_init <- apply(dfus_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
@@ -305,7 +309,7 @@ inits <- function(){
        # p = runif(n_years, 0.4, 0.6))
 }
 
-params <- c(# "Z",
+params_autlog <- c(# "Z",
   "mean_psi",
   "mean_p",
   "a0_p",
@@ -321,9 +325,9 @@ params <- c(# "Z",
   "sd_b1",
   "turnover")
 
-out <- jags(data = dfus_data,
+autlog <- jags(data = dfus_data,
             inits = inits,
-            parameters.to.save = params,
+            parameters.to.save = params_autlog,
             model.file = "Code/JAGS/dynamic_autologistic_occ.txt",
             n.chains = nc,
             n.adapt = na,
@@ -334,16 +338,16 @@ out <- jags(data = dfus_data,
             n.cores = nc)
 
 # Results
-out
+autlog
 
-plot(out)
+plot(autlog)
 
 library(ggplot2)
 library(tidyr)
 library(bayesplot)
 library(tidybayes)
 
-posterior <- as.matrix(out$samples)
+posterior <- as.matrix(autlog$samples)
 
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
@@ -387,25 +391,62 @@ ppc_intervals(
 # from Royle and Dorazio page 314
 
 
+###### Dynamic Occupancy ######
+
+# psi and p can't both have means (intercepts) that vary randomly
+# vary p randomly
+# psi fixed mean prob (intercept) that only varies by region
+# problem if p varies randomly by site and pass
+
 sink("Code/JAGS/dynamic_occ.txt")
 cat("
     model {
       
-      # Priors  
+      # # Priors  
       mu_psi ~ dnorm(0, 3)
       sd_psi ~ dunif(0, 5)
+        
+        # a0_psi ~ dnorm(0, pow(2, -2))
         
       for(i in 1:n_sites) {
         a0_psi[i] ~ dnorm(mu_psi, pow(sd_psi, -2))
         logit(psi1[i]) <- a0_psi[i]
       }
       
-      p[n_years] ~ dunif(0, 1) # change all uniform priors?
+      mu_gamma ~ dnorm(0, pow(2, -2))
+      sd_gamma ~ dt(0, pow(1,-2), 1)T(0, )
       
+      mu_phi ~ dnorm(0, pow(2, -2))
+      sd_phi ~ dt(0, pow(1,-2), 1)T(0, )
+      
+      mu_p ~ dnorm(0, pow(2, -2))
+      sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
+      
+      a0_p ~ dnorm(0, pow(2, -2))
+      a1 ~ dnorm(-1, pow(2, -2))  # behavioral effect for reduced detect with removal
+     
+      for(i in 1:n_sites) {
+        # a0_p[i] ~ dnorm(mu_p, sd_p)
+        for(t in 1:n_years) {
+          for(j in 1:n_passes) {
+          # logit(p[i,j,t]) <- a0_p[i] + a1 * j # add covariates
+          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates
+          }
+        }
+      } 
+      
+      # colonization and extinction not separable with data with both as random effects
+        # gamma ~ dunif(0, 1) # doesn't work if fixed
+        # phi ~ dunif(0, 1) # doesn't work if fixed
+        
       for(t in 1:(n_years - 1)) {
-        p[t] ~ dunif(0, 1) # make a logit linear model with neg trend by pass
-        gamma[t] ~ dunif(0, 1) # colonization prob
-        phi[t] ~ dunif(0, 1) # survival prob
+       # p[t] ~ dunif(0, 1) # make a logit linear model with neg trend by pass
+        # gamma[t] ~ dunif(0, 1) # colonization prob (by region and year or just by region or by stream or HUC?????)
+        # phi[t] ~ dunif(0, 1) # survival prob
+        lgamma[t] ~ dnorm(mu_gamma, pow(sd_gamma, -2))
+        lphi[t] ~ dnorm(mu_phi, pow(sd_phi, -2))
+        logit(gamma[t]) <- lgamma[t]
+        logit(phi[t]) <- lphi[t]
       }
       
       # Process model
@@ -413,6 +454,7 @@ cat("
         Z[i, 1] ~ dbern(psi1[i])
         for(t in 2:n_years) {
           mu_Z[i, t] <- Z[i, t-1] * phi[t-1] + (1 - Z[i, t-1]) * gamma[t-1]
+          # mu_Z[i, t] <- Z[i, t-1] * phi + (1 - Z[i, t-1]) * gamma
           Z[i, t] ~ dbern(mu_Z[i, t])
         }
       }
@@ -421,7 +463,7 @@ cat("
       for(i in 1:n_sites) {
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-            mu_y[i,j,t] <- Z[i, t] * p[t]
+            mu_y[i,j,t] <- Z[i, t] * p[i,j,t]
             y[i,j,t] ~ dbern(mu_y[i,j,t])
           }
         }
@@ -429,6 +471,17 @@ cat("
       
       # Derived parameters
       psi_mean <- mean(psi1[ ])
+      p_mean <- mean(p[ , 1, ])
+      
+      for(t in 1:n_years) {
+      Z_sum[t] <- sum(Z[ , t])
+      }
+      
+      # for(i in 1:n_sites) {
+        for(t in 2:n_years) {
+          turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
+        }
+      # }
       
       } # end model
 
@@ -450,9 +503,9 @@ if(testing) {
 
 # make data list for JAGS
 dfus_data <- list(y = dfus_3d, 
-                  n_sites = n_sites, 
-                  n_passes = n_passes,
-                  n_years = n_years)
+                  n_sites = dim(dfus_3d)[1], 
+                  n_passes = dim(dfus_3d)[2],
+                  n_years = dim(dfus_3d)[3])
 
 # Good starting values for occupancy = max over passes
 dfus_init <- apply(dfus_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
@@ -460,14 +513,22 @@ fill_len <- length(dfus_init[dfus_init == -Inf]) # how many site-years with no o
 dfus_init[dfus_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = dfus_init,
-       p = runif(n_years, 0.4, 0.6))
+  list(Z = dfus_init #,
+      # p = runif(n_years, 0.4, 0.6)
+      )
 }
 
 params <- c(# "Z",
-  "p",
+  "p_mean",
+  "psi_mean",
+  "Z_sum",
+  "turnover",
   "mu_psi",
   "sd_psi",
+  "mu_gamma",
+  "sd_gamma",
+  "mu_phi",
+  "sd_phi",
   "gamma",
   "phi")
 
