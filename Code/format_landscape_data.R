@@ -2,7 +2,7 @@
 
 library(dplyr)
 library(tidyr)
-
+library(readr)
 
 
 #----- Format Landscape Characteristics Data ----
@@ -21,7 +21,7 @@ landscape_characteristics <- landscape_characteristics %>%
          region = ifelse(region == "Prince William Forest National Park", "Capital", region),
          region = ifelse(region == "Shenandoah National Park", "Shenandoah", region),
          region = ifelse(region == "Canaan Valley National Wildlife Refuge", "Canaan", region),
-         region = ifelse(region == "Savage River State Park", "Savage", region),
+         region = ifelse(region == "Savage River State Forest", "Savage", region),
          transect = ifelse(region == "Canaan", gsub(pattern = "*_.*_", replacement = "", x = transect), transect)#,
          #transect = ifelse(region == "Canaan", substr(transect, 1, nchar(transect) - 7), transect)
   )
@@ -33,12 +33,17 @@ vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
 
 landscape_vars <- landscape_characteristics %>%
   filter(zone == "local",
-         variable %in% vars)%>%
+         variable %in% vars) %>%
   # mutate(loc = paste0(.$region, "_", .$transect)) %>%
   select(region, transect, variable, value) %>%
   distinct() %>%
   # pivot_wider(names_from = variable, values_from = value, values_fill = NA)
-  spread(key = variable, value = value)
+  spread(key = variable, value = value) %>%
+  mutate(Capital = ifelse(region == "Capital", 1, 0),
+         Canaan = ifelse(region == "Canaan", 1, 0),
+         Shenandoah = ifelse(region == "Shenandoah", 1, 0),
+         WMaryland = ifelse(region == "Savage", 1, 0)) %>%
+  select(-region)
 
 # modeldata <- landscape_occ %>%
 #   left_join(landscape_vars)
