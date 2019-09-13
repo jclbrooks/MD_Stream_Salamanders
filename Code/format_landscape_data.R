@@ -45,6 +45,29 @@ landscape_vars <- landscape_characteristics %>%
          WMaryland = ifelse(region == "Savage", 1, 0)) %>%
   select(-region)
 
+#-----Create a matrix that shows whether a species' range overlaps each transect----
+
+
+spec_dist <- landscape_vars %>%
+  ungroup() %>%
+  select(transect, Capital, Canaan, Shenandoah, WMaryland) %>%
+  mutate(DFUS = 1,
+         DMON = NA_real_,
+         DOCH = NA_real_,
+         EBIS = 1,
+         GPOR = NA_real_,
+         EGUT = NA_real_,
+         ELON = NA_real_,
+         PRUB = 1,
+         DMON = ifelse(Capital == 1, 0, 1),
+         DMON = ifelse(transect == "COST22-1", 1, DMON),
+         DOCH = ifelse(WMaryland == 1 | Canaan == 1, 1, 0),
+         GPOR = ifelse(Capital == 1, 0, 1)) ### need to finish EGUT and ELON 
+         
+
+
+
+
 # modeldata <- landscape_occ %>%
 #   left_join(landscape_vars)
 
