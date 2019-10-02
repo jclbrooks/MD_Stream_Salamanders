@@ -30,3 +30,5 @@ Folder: `Code/`
 data_exploration.R - code for making summary tables and figures of the raw data
 
 run_jags.R - script for running JAGS N-mixture model
+
+run_glm.R - script for running GLM, maybe GLMM??
