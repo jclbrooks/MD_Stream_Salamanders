@@ -107,6 +107,10 @@ db <- src_postgres(dbname='sheds', host='felek.cns.umass.edu', port='5432', user
 tbl_hucs <- tbl(db, 'catchment_huc12') %>%
   dplyr::filter(featureid %in% featureids)
 
+df_hucs <- dplyr::collect(tbl_hucs, n = Inf)
+
+length(unique(df_hucs$huc12))
+
 #---------------------daymet climate data-------------------------
 start.time <- Sys.time()
 cat(paste0("Make daymet query: ", start.time), file = logFile, append = TRUE, sep = "\n")
@@ -131,6 +135,8 @@ dbClearResult(rs)
 
 table(df$featureid)
 str(df)
+
+##### need 2018 data
 
 
 #-------------------- Restructure and combine data----------------
