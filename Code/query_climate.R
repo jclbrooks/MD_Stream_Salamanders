@@ -115,6 +115,9 @@ m <- dbDriver("PostgreSQL")
 
 con <- dbConnect(m, options('SHEDS_USERNAME'), password=options('SHEDS_PASSWORD'), dbname="sheds", host='felek.cns.umass.edu')
 
+dbListTables(con)
+dbListFields(con, "daymet_daily")
+
 rs <- dbSendQuery(con, qry)
 
 df2 <- fetch(rs, n = -1)
