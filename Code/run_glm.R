@@ -1,7 +1,7 @@
 ### Western Maryland Abundance Modelling
 ### Jacey Brooks
 
-### GLM or GLMM by stream??
+### glm or GLMM by stream??
 
 
 library(tidyr)
@@ -55,129 +55,200 @@ sallies <- sal %>%
          transect_num = as.integer(as.factor(transect)))
 
 
-# ---- Exploratory GLMs ----
-
 # Checking for correlation
 library(corrplot)
 cov <- sallies %>%
   select(air, pH, water, EC, TDS) 
 cov <- na.omit(cov)
 corrplot(corr = cov)
-cor(cov)
+cor(cov)   # can also use vif() variance inflation factor, toss out anything above 10, ideal <3
 plot(cor(cov))
 ## EC and TDS are highly correlated, EC and TDS are somewhat correlated with water temp
 
 
-# DFUS
-dfus <- glm(DFUS ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)
+# ---- Exploratory GLMMs ----
 
-dfus <- glm(DFUS ~ air + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)  
+par(mfrow=c(1,3))
+
+# DFUS
+dfus1 <- glmer(DFUS ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus1)
+plot(dfus1)
+qqnorm(residuals(dfus1))
+boxplot(residuals(dfus1))
+hist(residuals(dfus1))
+
+dfus2 <- glmer(DFUS ~ air + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus2)
+plot(dfus2)
+qqnorm(residuals(dfus2))
+boxplot(residuals(dfus2))
+hist(residuals(dfus2))
   
-dfus <- glm(DFUS ~ pH + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)  
+dfus3 <- glmer(DFUS ~ pH + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus3)
+plot(dfus3)  
+qqnorm(residuals(dfus3))
+boxplot(residuals(dfus3))
+hist(residuals(dfus3))
   
-dfus <- glm(DFUS ~ water + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)  
+dfus4 <- glmer(DFUS ~ water + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus4)
+plot(dfus4)  
+qqnorm(residuals(dfus4))
+boxplot(residuals(dfus4))
+hist(residuals(dfus4))
   
-dfus <- glm(DFUS ~ EC + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)  
+dfus5 <- glmer(DFUS ~ EC + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus5)
+plot(dfus5) 
+qqnorm(residuals(dfus5))
+boxplot(residuals(dfus5))
+hist(residuals(dfus5))
   
-dfus <- glm(DFUS ~ TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(dfus)
-plot(dfus)  
+dfus6 <- glmer(DFUS ~ TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(dfus6)
+plot(dfus6)  
+qqnorm(residuals(dfus6))
+boxplot(residuals(dfus6))
+hist(residuals(dfus6))
   
 # EBIS
-ebis <- glm(EBIS ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)
+ebis1 <- glmer(EBIS ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis1)
+plot(ebis1)
+qqnorm(residuals(ebis1))
+boxplot(residuals(ebis1))
+hist(residuals(ebis1))
 
-ebis <- glm(EBIS ~ air + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)
+ebis2 <- glmer(EBIS ~ air + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis2)
+plot(ebis2)
+qqnorm(residuals(ebis2))
+boxplot(residuals(ebis2))
+hist(residuals(ebis2))
 ##################################### SIGNIFICANT, residuals biased, somewhat autocorrelated
+################### NOT BAD
   
-ebis <- glm(EBIS ~ pH + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)
-##################################### SIGNIFICANT, residuals not awesome
+ebis3 <- glmer(EBIS ~ pH + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis3)
+plot(ebis3)
+qqnorm(residuals(ebis3))
+boxplot(residuals(ebis3))
+hist(residuals(ebis3))
   
-ebis <- glm(EBIS ~ water + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)  
-##################################### SIGNIFICANT, residuals bad
+ebis4 <- glmer(EBIS ~ water + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis4)
+plot(ebis4) 
+qqnorm(residuals(ebis4))
+boxplot(residuals(ebis4))
+hist(residuals(ebis4))
+##################################### SIGNIFICANT, residuals not terrible, some clustering
   
-ebis <- glm(EBIS ~ EC + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)  
-##################################### SIGNIFICANT, residuals bad
+ebis5 <- glmer(EBIS ~ EC + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis5)
+plot(ebis5)  
+qqnorm(residuals(ebis5))
+boxplot(residuals(ebis5))
+hist(residuals(ebis5))
   
-ebis <- glm(EBIS ~ TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(ebis)
-plot(ebis)  
+ebis6 <- glmer(EBIS ~ TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(ebis6)
+plot(ebis6)  
+qqnorm(residuals(ebis6))
+boxplot(residuals(ebis6))
+hist(residuals(ebis6))
 
 
 # DMON
-dmon <- glm(DMON ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)
+dmon1 <- glmer(DMON ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon1)
+plot(dmon1)
+qqnorm(residuals(dmon1))
+boxplot(residuals(dmon1))
+hist(residuals(dmon1))
 
-dmon <- glm(DMON ~ air + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)  
+dmon2 <- glmer(DMON ~ air + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon2)
+plot(dmon2)
+qqnorm(residuals(dmon2))
+boxplot(residuals(dmon2))
+hist(residuals(dmon2))
+############### significant, residuals are extreme
   
-dmon <- glm(DMON ~ pH + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)  
-################## SIGNIFICANT, residuals skewed
+dmon3 <- glmer(DMON ~ pH + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon3)
+plot(dmon3)  
+qqnorm(residuals(dmon3))
+boxplot(residuals(dmon3))
+hist(residuals(dmon3))
   
-dmon <- glm(DMON ~ water + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)  
+dmon4 <- glmer(DMON ~ water + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon4)
+plot(dmon4)  
+qqnorm(residuals(dmon4))
+boxplot(residuals(dmon4))
+hist(residuals(dmon4))
+################# significant, residuals extreme
   
-dmon <- glm(DMON ~ EC + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)  
-################# sIGNIFICANT, but skewed
+dmon5 <- glmer(DMON ~ EC + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon5)
+plot(dmon5) 
+qqnorm(residuals(dmon5))
+boxplot(residuals(dmon5))
+hist(residuals(dmon5))
   
-dmon <- glm(DMON ~ TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(dmon)
-plot(dmon)  
-################# SIGNIFICANT, but residuals not awesome, similar to EC glm
+dmon6 <- glmer(DMON ~ TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(dmon6)
+plot(dmon6)  
+qqnorm(residuals(dmon6))
+boxplot(residuals(dmon6))
+hist(residuals(dmon6))
 
 
 # GPOR
-gpor <- glm(GPOR ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor)
+gpor1 <- glmer(GPOR ~ air + pH + water + DO + EC + TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor1)
+plot(gpor1)
+qqnorm(residuals(gpor1))
+boxplot(residuals(gpor1))
+hist(residuals(gpor1))
 
-gpor <- glm(GPOR ~ air + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor)  
+gpor2 <- glmer(GPOR ~ air + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor2)
+plot(gpor2)  
+qqnorm(residuals(gpor2))
+boxplot(residuals(gpor2))
+hist(residuals(gpor2))
+############### significant residuals are clustered and extreme
   
-gpor <- glm(GPOR ~ pH + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor)  
-############## SIGNIFICANT, residuals are skewed
+gpor3 <- glmer(GPOR ~ pH + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor3)
+plot(gpor3) 
+qqnorm(residuals(gpor3))
+boxplot(residuals(gpor3))
+hist(residuals(gpor3))
   
-gpor <- glm(GPOR ~ water + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor) 
-############### SIGNIFICANT, residuals aren't terrible but not great
+gpor4 <- glmer(GPOR ~ water + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor4)
+plot(gpor4) 
+qqnorm(residuals(gpor4))
+boxplot(residuals(gpor4))
+hist(residuals(gpor4))
   
-gpor <- glm(GPOR ~ EC + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor)  
+gpor5 <- glmer(GPOR ~ EC + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor5)
+plot(gpor5)  
+qqnorm(residuals(gpor5))
+boxplot(residuals(gpor5))
+hist(residuals(gpor5))
   
-gpor <- glm(GPOR ~ TDS + (1 | transect_num), family = poisson, data = sallies)
-summary(gpor)
-plot(gpor)  
+gpor6 <- glmer(GPOR ~ TDS + (1 | transect_num), family = poisson, data = sallies)
+summary(gpor6)
+plot(gpor6) 
+qqnorm(residuals(gpor6))
+boxplot(residuals(gpor6))
+hist(residuals(gpor6))
 
 
 
