@@ -44,6 +44,7 @@ combos <- expand_grid(transect_num, year, species) %>%
 
 # Separate by species and make into 3D array with transect x pass x year
 
+#DFUS
 dfus <- combos %>%
   left_join(df_occ1) %>%
   dplyr::filter(species == "DFUS") # probelm with 2018 with no pass 1?
@@ -59,6 +60,126 @@ for(t in 1:n_years) {
 }
 
 saveRDS(dfus_3d, "Data/Derived/dfus_3d.rds")
+
+# DMON
+dmon <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "DMON") # probelm with 2018 with no pass 1?
+  
+summary(dmon)
+  
+dmon_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    dmon_3d[ , , t] <- dmon %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(dmon_3d, "Data/Derived/dmon_3d.rds")
+
+#DOCH
+doch <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "DOCH") # probelm with 2018 with no pass 1?
+  
+summary(doch)
+  
+doch_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    doch_3d[ , , t] <- doch %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(doch_3d, "Data/Derived/doch_3d.rds")
+
+#EBIS
+ebis <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "EBIS") # probelm with 2018 with no pass 1?
+  
+summary(ebis)
+  
+ebis_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    ebis_3d[ , , t] <- ebis %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(ebis_3d, "Data/Derived/ebis_3d.rds")
+
+#EGUT
+egut <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "EGUT") # probelm with 2018 with no pass 1?
+  
+summary(egut)
+  
+egut_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    egut_3d[ , , t] <- egut %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(egut_3d, "Data/Derived/egut_3d.rds")
+
+#ELON
+elon <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "ELON") # probelm with 2018 with no pass 1?
+  
+summary(elon)
+  
+elon_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    elon_3d[ , , t] <- elon %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(elon_3d, "Data/Derived/elon_3d.rds")
+
+#GPOR
+gpor <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "GPOR") # probelm with 2018 with no pass 1?
+  
+summary(gpor)
+  
+gpor_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    gpor_3d[ , , t] <- gpor %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(gpor_3d, "Data/Derived/gpor_3d.rds")
+
+#PRUB
+prub <- combos %>%
+  left_join(df_occ1) %>%
+  dplyr::filter(species == "PRUB") # probelm with 2018 with no pass 1?
+  
+summary(prub)
+  
+prub_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+for(t in 1:n_years) {
+    prub_3d[ , , t] <- prub %>% 
+      filter(year == year[t]) %>%
+      dplyr::select(starts_with("pass")) %>%
+      as.matrix()
+}
+
+saveRDS(prub_3d, "Data/Derived/prub_3d.rds")
+
 
 
 
