@@ -89,6 +89,23 @@ Sys.time() - start.time
 str(df_daymet_long)
 
 
+#---------------------HUC data-------------------------
+
+con <- dbConnect(
+  RPostgreSQL::PostgreSQL(),
+  host = "ecosheds.org",
+  port = 5432,
+  user = options('SHEDS_USERNAME'),
+  password = options('SHEDS_PASSWORD'),
+  dbname = "sheds"
+)
+
+dbListTables(con)
+
+db <- src_postgres(dbname='sheds', host='felek.cns.umass.edu', port='5432', user=options('SHEDS_USERNAME'), password=options('SHEDS_PASSWORD'))
+
+tbl_hucs <- tbl(db, 'catchment_huc12') %>%
+  dplyr::filter(featureid %in% featureids)
 
 #---------------------daymet climate data-------------------------
 start.time <- Sys.time()
@@ -96,34 +113,25 @@ cat(paste0("Make daymet query: ", start.time), file = logFile, append = TRUE, se
 
 # too big/slow to pull through R so make the query and export that. The resulting sql script can then be run via command line or within a bash script or make file
 
+featureids <- featureids[!is.na(featureids)]
 
-featureids_string <- paste(featureids[!is.na(featureids)], collapse=', ')
+con <- dbConnect(
+  RPostgreSQL::PostgreSQL(),
+  host = "ecosheds.org",
+  port = 5432,
+  user = options('SHEDS_USERNAME'),
+  password = options('SHEDS_PASSWORD'),
+  dbname = "sheds"
+)
 
-years <- 2000:2018
-years_string <- paste(years, collapse=', ')
-
-qry <- paste0("COPY(SELECT featureid, date_part('year', date) as year, date, tmax, tmin, prcp, dayl, srad, swe FROM daymet WHERE featureid IN (", featureids_string, ") AND date_part('year', date) IN (",years_string, ") ) TO STDOUT CSV HEADER;")  #
-
-if(!file.exists(file.path(getwd(), "Code"))) dir.create(file.path(getwd(), "Code"))
-cat(qry, file = "Code/daymet_query.sql")
-
-
-# psql -f <subdirectory>/code/daymet_query.sql -d sheds -w > <subdirectory>/daymet_results.csv
-
-# create a PostgreSQL instance and create one connection.
-m <- dbDriver("PostgreSQL")
-
-con <- dbConnect(m, options('SHEDS_USERNAME'), password=options('SHEDS_PASSWORD'), dbname="sheds", host='felek.cns.umass.edu')
-
-dbListTables(con)
-dbListFields(con, "daymet_daily")
-
-rs <- dbSendQuery(con, qry)
-
-df2 <- fetch(rs, n = -1)
-dbHasCompleted(rs)
+sql <- glue::glue_sql("select * from get_daymet_featureids('{<<featureids*>>}');", .open = "<<", .close = ">>", .con = con)
+rs <- dbSendQuery(con, sql)
+df <- dbFetch(rs)
 dbClearResult(rs)
-dbListTables(con)   
+
+table(df$featureid)
+str(df)
+
 
 #-------------------- Restructure and combine data----------------
 climateData <- data.frame(df_daymet_long, stringsAsFactors = FALSE)
