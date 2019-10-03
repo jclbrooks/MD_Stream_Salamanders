@@ -107,4 +107,4 @@ transects <- trans %>%
 str(transects)
 summary(transects)
 
-# write.csv(x = transects, file = "featureids_for_DAYMET_data.csv")
+# write.csv(x = transects, file = "featureids_for_DAYMET_data.csv", row.names = FALSE)
