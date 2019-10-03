@@ -11,7 +11,7 @@ Each species will be modeled individually because of discrete range boundaries c
 
 Folder: `Code/`
 
-1. `Landscape_MSOM.R` - should rename to `combine_obs_data.R`
+1. `combine_obs_data.R` - formats and organizes occupancy data before being organized in `prep_occ.R` 
 
 2. `query_climate.R` - get the daymet climate data averaged by catchment from USGS Conte SHEDS db
 
@@ -30,3 +30,5 @@ Folder: `Code/`
 data_exploration.R - code for making summary tables and figures of the raw data
 
 run_jags.R - script for running JAGS N-mixture model
+
+run_glm.R - script for running GLM, maybe GLMM??
