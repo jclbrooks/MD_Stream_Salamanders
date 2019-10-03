@@ -1,5 +1,20 @@
 # from Royle and Dorazio page 314
 
+testing <- TRUE
+if(testing) {
+  na = 100
+  nb = 500
+  ni = 500 + nb
+  nt = 1
+  nc = 1
+} else {
+  na = 1000
+  nb = 10000
+  ni = 40000
+  nt = 4
+  nc = 3
+}
+
 ##### Simple Dynamic Occupancy #####
 
 sink("Code/JAGS/dynamic_occ_simple.txt")
@@ -211,17 +226,17 @@ cat("
       # Priors    
       
       mu_psi ~ dnorm(0, pow(2, -2))
-      sd_psi ~ dt(0, pow(1,-2), 1)T(0, )
+      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, )
       
       mu_p ~ dnorm(0, pow(2, -2))
       sd_p ~ dt(0, pow(1.3,-2), 1)T(0, )
       
       # doesn't work with random effects by site and year on b0 and b1
       mu_b0 ~ dnorm(0, pow(2, -2))
-      sd_b0 ~ dt(0, pow(1,-2), 1)T(0, )
+      sd_b0 ~ dt(0, pow(2,-2), 1)T(0, )
       
       mu_b1 ~ dnorm(0, pow(2, -2))
-      sd_b1 ~ dt(0, pow(1,-2), 1)T(0, )
+      sd_b1 ~ dt(0, pow(2,-2), 1)T(0, )
       
       for(i in 1:n_sites) {
         logit_psi1[i] ~ dnorm(mu_psi, sd_psi)
@@ -257,7 +272,10 @@ cat("
       for(i in 1:n_sites) { # sites or transects or streams?
         Z[i, 1] ~ dbern(psi1[i])
         for(t in 2:n_years) {
-          logit(mu_Z[i, t]) <- b0[t-1] + b1[t-1] * Z[i, t-1] # b0[i, t-1] + b1[i, t-1] * Z[i, t-1] # + b2 * region[i] + b3 * forest[i] + b4 * temp[i] + b5 * region[i] * Z[i, t-1] + b6 * forest[i] * Z[i, t-1] + b7 * temp[i] * Z[i, t-1] # random stream or HUC
+          logit(mu_Z[i, t]) <- b0[t-1] + b1[t-1] * Z[i, t-1] 
+          
+          
+          # b0[i, t-1] + b1[i, t-1] * Z[i, t-1] # + b2 * region[i] + b3 * forest[i] + b4 * temp[i] + b5 * region[i] * Z[i, t-1] + b6 * forest[i] * Z[i, t-1] + b7 * temp[i] * Z[i, t-1] # random stream or HUC
           Z[i, t] ~ dbern(mu_Z[i, t])
         }
       }
@@ -335,7 +353,8 @@ autlog <- jags(data = dfus_data,
             n.burnin = nb,
             n.thin = nt, 
             parallel = TRUE,
-            n.cores = nc)
+            n.cores = nc,
+            modules=c('glm'))
 
 # Results
 autlog
