@@ -226,10 +226,10 @@ cat("
       # Priors    
       
       mu_psi ~ dnorm(0, pow(2, -2))
-      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, )
+      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
       
       mu_p ~ dnorm(0, pow(2, -2))
-      sd_p ~ dt(0, pow(1.3,-2), 1)T(0, )
+      sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
       
       # doesn't work with random effects by site and year on b0 and b1
       mu_b0 ~ dnorm(0, pow(2, -2))
