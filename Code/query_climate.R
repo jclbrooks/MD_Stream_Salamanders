@@ -18,6 +18,7 @@ library(RPostgreSQL)
 # library(jsonlite)
 library(readr)
 library(zoo) # rollsum, rollapply
+library(stringr)
 
 
 
@@ -43,51 +44,34 @@ df_covariates_long <- dplyr::collect(tbl_covariates, n = Inf)
 Sys.time() - start.time
 
 df_covariates <- df_covariates_long %>%
-  tidyr::spread(variable, value) # convert from long to wide by variable
+  tidyr::spread(variable, value) %>% # convert from long to wide by variable
+  mutate(impound_area = AreaSqKM * allonnet / 100) %>%
+  data.frame(., stringsAsFactors = FALSE)
+
 summary(df_covariates)
 
 # need to organize covariates into upstream or local by featureid
-upstream <- df_covariates %>%
-  dplyr::group_by(featureid) %>%
-  dplyr::filter(zone == "upstream",
-                is.na(riparian_distance_ft)) %>%
-  # dplyr::select(-zone, -location_id, -location_name) %>%
-  # dplyr::summarise_each(funs(mean)) %>% # needed???
-  dplyr::rename(forest_all = forest)
+# upstream <- df_covariates %>%
+#   dplyr::group_by(featureid) %>%
+#   dplyr::filter(zone == "upstream",
+#                 is.na(riparian_distance_ft)) %>%
+#   # dplyr::select(-zone, -location_id, -location_name) %>%
+#   # dplyr::summarise_each(funs(mean)) %>% # needed???
+#   dplyr::rename(forest_all = forest)
+# 
+# # Get upstream riparian forest
+# riparian_200 <- df_covariates %>%
+#   dplyr::group_by(featureid) %>%
+#   dplyr::select(featureid, forest, zone, riparian_distance_ft) %>%
+#   dplyr::filter(zone == "upstream",
+#                 riparian_distance_ft == 200)
+# 
+# # create covariateData input dataset
+# covariateData <- riparian_200 %>%
+#   dplyr::select(-riparian_distance_ft) %>%
+#   dplyr::left_join(upstream)
 
-# Get upstream riparian forest
-riparian_200 <- df_covariates %>%
-  dplyr::group_by(featureid) %>%
-  dplyr::select(featureid, forest, zone, riparian_distance_ft) %>%
-  dplyr::filter(zone == "upstream",
-                riparian_distance_ft == 200)
-
-# create covariateData input dataset
-covariateData <- riparian_200 %>%
-  dplyr::select(-riparian_distance_ft) %>%
-  dplyr::left_join(upstream)
-
-str(covariateData)
-
-# covariateData <- left_join(covariateData,
-#                            dplyr::select(df_locations, location_id, location_name, latitude, longitude, featureid)) %>%
-#   dplyr::mutate(location_name=factor(location_name))
-# summary(covariateData)
-
-
-#---------------------daymet climate data-------------------------
-start.time <- Sys.time()
-# cat(paste0("Make daymet query: ", start.time), file = logFile, append = TRUE, sep = "\n")
-
-tbl_daymet <- tbl(db, 'daymet') %>%
-  dplyr::filter(featureid %in% featureids)
-
-df_daymet_long <- dplyr::collect(tbl_daymet, n = Inf)
-
-Sys.time() - start.time
-
-str(df_daymet_long)
-
+str(df_covariates)
 
 #---------------------HUC data-------------------------
 
@@ -109,13 +93,14 @@ tbl_hucs <- tbl(db, 'catchment_huc12') %>%
 
 df_hucs <- dplyr::collect(tbl_hucs, n = Inf)
 
+df_hucs <- df_hucs %>%
+  mutate(huc10 = str_sub(huc12, end = -3)) # not sure why 3, space?
+
 length(unique(df_hucs$huc12))
+length(unique(df_hucs$huc10))
 
 #---------------------daymet climate data-------------------------
 start.time <- Sys.time()
-cat(paste0("Make daymet query: ", start.time), file = logFile, append = TRUE, sep = "\n")
-
-# too big/slow to pull through R so make the query and export that. The resulting sql script can then be run via command line or within a bash script or make file
 
 featureids <- featureids[!is.na(featureids)]
 
@@ -130,35 +115,42 @@ con <- dbConnect(
 
 sql <- glue::glue_sql("select * from get_daymet_featureids('{<<featureids*>>}');", .open = "<<", .close = ">>", .con = con)
 rs <- dbSendQuery(con, sql)
-df <- dbFetch(rs)
+daymet_df <- dbFetch(rs)
 dbClearResult(rs)
 
-table(df$featureid)
-str(df)
+table(daymet_df$featureid)
+str(daymet_df)
 
 ##### need 2018 data
 
 
 #-------------------- Restructure and combine data----------------
-climateData <- data.frame(df_daymet_long, stringsAsFactors = FALSE)
+climateData <- data.frame(daymet_df, stringsAsFactors = FALSE)
 
 tempData <- climateData %>%
   dplyr::mutate(site = as.numeric(as.factor((featureid))),
+                year = year(date),
                 dOY = yday(date),
-                airTemp = (tmax + tmin) / 2)
+                airTemp = (tmax + tmin) / 2) # Add seasons to summarize by later??
 
-# Order by group and date
-tempData <- tempData[order(tempData$site,tempData$year,tempData$dOY), ]
+# create separate dataframe with just longer term norms related to occupancy
+# summarize by year (or seasons first?) and then means across years
+climate_data_means <- tempData %>%
+  group_by(featureid, year) %>%
+  select(featureid, year, tmax, airTemp, prcp, swe) %>%
+  summarise(tmax = max(tmax), airTemp = mean(airTemp), prcp_mo = sum(prcp)/12, swe = sum(swe)) %>%
+  ungroup() %>%
+  select(-year) %>%
+  group_by(featureid) %>%
+  summarise_all(mean) # just overall wetter or cooler sites?
 
-# For checking the order of tempDataSync
-tempData$count <- 1:length(tempData$year)
+summary(climate_data_means)
 
-tempData <- tempData[order(tempData$count),] # just to make sure tempDataSync is ordered for the slide function
-
-# moving means instead of lagged terms in the future
+# detection weather variables - rolling means
+# filter to years with observed data?
 tempData <- tempData %>%
   group_by(site, year) %>%
-  arrange(site, year, dOY) %>%
+  arrange(site, date) %>%
   mutate(airTempLagged1 = lag(airTemp, n = 1, fill = NA),
          #airTempLagged2 = lag(airTemp, n = 2, fill = NA),
          #prcpLagged1 = lag(prcp, n = 1, fill = NA),
@@ -181,11 +173,21 @@ tempData <- tempData %>%
          prcp7 = rollsum(x = prcp, 7, align = "right", fill = NA),
          prcp30 = rollsum(x = prcp, 30, align = "right", fill = NA))
 
-tempDataBP <- temperatureData %>%
-  dplyr::filter(!is.na(featureid)) %>%
-  left_join(dplyr::mutate(data.frame(unclass(tempData)), date = as.Date(date))) %>%
-  left_join(covariateData, by = c("featureid")) %>%
-  dplyr::mutate(site = as.character(featureid),
-                impoundArea = AreaSqKM * allonnet / 100)
 
+
+#----------------save files---------------------
+saveRDS(df_covariates, file = "Data/Derived/landscape.rds")
+saveRDS(df_hucs, file = "Data/Derived/hucs.rds")
+saveRDS(tempData, file = "Data/Derived/daymet_daily.rds")
+saveRDS(climate_data_means, file = "Data/Derived/daymet_means.rds")
+
+# library(foreign)
+# write.dbf(data.frame(df_featureid_200, stringsAsFactors = FALSE), file = paste0(data_dir, "/featureid_list_20160602.dbf"))
+
+#---------------cleaning---------------------
+
+rm(list = ls())
+gc()
+
+# unload packages?
 

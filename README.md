@@ -13,7 +13,7 @@ Folder: `Code/`
 
 1. `combine_obs_data.R` - formats and organizes occupancy data before being organized in `prep_occ.R` 
 
-2. `query_climate.R` - get the daymet climate data averaged by catchment from USGS Conte SHEDS db
+2. `query_climate.R` - get the daymet climate data averaged by catchment from USGS Conte SHEDS db - also gets landscape and huc data
 
 3. `format_landscape_data.R` - format and organize the landscape data
 
