@@ -4,12 +4,42 @@ library(tidyr)
 library(lubridate)
 
 df_occ <- readRDS("Data/Derived/combined_detailed_occ.rds")
+df_covariates <- readRDS(file = "Data/Derived/landscape.rds") # can use this or the one Jacey created
+df_hucs <- readRDS(file = "Data/Derived/hucs.rds") # can just left_join into covariate data
+tempData <- readRDS(file = "Data/Derived/daymet_daily.rds") # daily covariates are going to need to be prepped and spread - do in separate script
+climate_data_means <- readRDS(file = "Data/Derived/daymet_means.rds") # annual means by
+featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv")
+
 
 str(df_occ)
 summary(df_occ) # missing dates :(
 
 df_occ %>%
   filter(is.na(date))
+
+# Rearrange covariates so they are in the same order (by featureid)
+
+df_occ_all <- df_occ %>%
+  left_join(featureids_matched) %>%
+  filter(is.na(featureid)) %>% ## not sure if we need this??
+  left_join(df_covariates) %>%
+  left_join(df_hucs) %>%
+  left_join(tempData) %>%
+  left_join(climate_data_means)
+
+df_covariates1 <- df_occ_all %>%
+  select(featureid, zone, riparian_distance_ft, agriculture, alloffnet, allonnet, AreaSqKM, devel_hi, devel_low, devel_med, devel_opn, developed, drainageclass, elevation, forest, fwsopenwater, fwswetlands, herbaceous, hydrogroup_a, hydrogroup_ab, hydrogroup_cd, hydrogroup_d1, hydrogroup_d4, impervious, openoffnet, openonnet, percent_sandy, slope_pcnt, surfcoarse, tree_canopy, undev_forest, water, wetland, impound_area)
+
+df_hucs1 <- df_occ_all %>%
+  select(featureid, huc12, huc10)
+
+tempData1 <- df_occ_all %>%
+  select(featureid, date, tmax, tmin, prcp, dayl, srad, vp, swe, site, year, dOY, airTemp, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30)
+
+climate_data_means1 <- df_occ_all %>%
+  select(featureid, tmax, airTemp, prcp_mo, swe)
+
+############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW
 
 # Reduce (summarize) occupancy data to species (not stage/age)
 
