@@ -9,6 +9,7 @@ library(dplyr)
 library(lme4)
 library(ggplot2)
 library(lubridate)
+library(AICcmodavg)
 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
@@ -95,113 +96,97 @@ vif(dfus1)
 par(mfrow=c(1,3))
 
 # DFUS
-dfus1 <- glmer(DFUS ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(dfus1)
-plot(dfus1)
-qqnorm(residuals(dfus1))
-boxplot(residuals(dfus1))
-hist(residuals(dfus1))
-# removed pH from model because it wouldn't converge with it in it
-# none of the covariates are statistically significant
+dfus = list()
 
-dfus4 <- glmer(DFUS ~ water + (1 | transect_num), family = poisson, data = sal_all)
-summary(dfus4)
-plot(dfus4)
-qqnorm(residuals(dfus4))
-boxplot(residuals(dfus4))
-hist(residuals(dfus4))
+dfus[[1]] <- glmer(DFUS ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+sal_all$pH <- scale(sal_all$pH)
+#sal_all$EC <- scale(sal_all$EC)
+
+dfus[[2]] <- glmer(DFUS ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = dfus, modnames = model_names)
+
+summary(dfus[[2]])
+plot(dfus[[2]])
+qqnorm(residuals(dfus[[2]]))
+boxplot(residuals(dfus[[2]]))
+hist(residuals(dfus[[2]]))
+# none of the variables are significant, residuals aren't great
+
   
 # DMON
-dmon1 <- glmer(DMON ~ air + pH + EC + (1 | transect_num), family = poisson, data = sal_all)
-summary(dmon1)
-plot(dmon1)
-qqnorm(residuals(dmon1))
-boxplot(residuals(dmon1))
-hist(residuals(dmon1))
-### air is statistically significant, the residuals look good!
+dmon = list()
+
+dmon[[1]] <- glmer(DMON ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+dmon[[2]] <- glmer(DMON ~  pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = dmon, modnames = model_names)
+
+summary(dmon[[2]])
+plot(dmon[[2]])
+qqnorm(residuals(dmon[[2]]))
+boxplot(residuals(dmon[[2]]))
+hist(residuals(dmon[[2]]))
+### pH is statistically significant, the residuals look okay
 ###--- PLOT ---###
-
-dmon2 <- glmer(DMON ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(dmon2)
-plot(dmon2)
-qqnorm(residuals(dmon2))
-boxplot(residuals(dmon2))
-hist(residuals(dmon2))
-### depth is statistically significant, the residuals look okay
-###--- PLOT ---###
-
-dmon3 <- glmer(DMON ~ water + (1 | transect_num), family = poisson, data = sal_all)
-summary(dmon3)
-plot(dmon3)
-qqnorm(residuals(dmon3))
-boxplot(residuals(dmon3))
-hist(residuals(dmon3))
-### water is significant, residuals look okay
-
-
 
 # DOCH
-doch1 <- glmer(DOCH ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(doch1)
-plot(doch1)
-qqnorm(residuals(doch1))
-boxplot(residuals(doch1))
-hist(residuals(doch1))
-# only use air because pH and EC cause the model's parameters to be on the boudnary of the feasible parameter space, look up ?isSingular for explanation
+doch = list()
 
-doch3 <- glmer(DOCH ~ water + (1 | transect_num), family = poisson, data = sal_all)
-summary(doch3)
-plot(doch3)
-qqnorm(residuals(doch3))
-boxplot(residuals(doch3))
-hist(residuals(doch3))
-# wwater is significant, residuals are not great
-###--- PLOT ---###
+doch[[1]] <- glmer(DOCH ~ water + mean_wetted_width  + (1 | transect_num), family = poisson, data = sal_all)
 
+doch[[2]] <- glmer(DOCH ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = doch, modnames = model_names)
+
+### both models failed to converge
 
 
 # EBIS
-ebis1 <- glmer(EBIS ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(ebis1)
-plot(ebis1)
-qqnorm(residuals(ebis1))
-boxplot(residuals(ebis1))
-hist(residuals(ebis1))
-# air, pH, EC significant, some clustering in residuals but not terrible
-###--- PLOT ---###
+ebis = list()
 
-ebis2 <- glmer(EBIS ~ water + (1 | transect_num), family = poisson, data = sal_all)
-summary(ebis2)
-plot(ebis2)
-qqnorm(residuals(ebis2))
-boxplot(residuals(ebis2))
-hist(residuals(ebis2))
-### water is significant, residuals look good
+ebis[[1]] <- glmer(EBIS ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+ebis[[2]] <- glmer(EBIS ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = ebis, modnames = model_names)
+
+summary(ebis[[2]])
+plot(ebis[[2]])
+qqnorm(residuals(ebis[[2]]))
+boxplot(residuals(ebis[[2]]))
+hist(residuals(ebis[[2]]))
+### nothing is significant, residuals look GREAT
 
 # GPOR
-gpor1 <- glmer(GPOR ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(gpor1)
-plot(gpor1)
-qqnorm(residuals(gpor1))
-boxplot(residuals(gpor1))
-hist(residuals(gpor1))
-# mean_wetted_width, mean_depth is significant, residuals okay
+gpor = list()
 
-gpor2 <- glmer(GPOR ~ water + (1 | transect_num), family = poisson, data = sal_all)
-summary(gpor2)
-plot(gpor2)
-qqnorm(residuals(gpor2))
-boxplot(residuals(gpor2))
-hist(residuals(gpor2))
-# water not significa
+gpor[[1]] <- glmer(GPOR ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+gpor[[2]] <- glmer(GPOR ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = gpor, modnames = model_names)
+
+summary(gpor[[2]])
+plot(gpor[[2]])
+qqnorm(residuals(gpor[[2]]))
+boxplot(residuals(gpor[[2]]))
+hist(residuals(gpor[[2]]))
+# none are significant, residuals are okay
 
 # PRUB
-prub1 <- glmer(PRUB ~ air + pH + EC + mean_wetted_width + mean_depth + (1 | transect_num), family = poisson, data = sal_all)
-summary(prub1)
-plot(prub1)
-qqnorm(residuals(prub1))
-boxplot(residuals(prub1))
-hist(residuals(prub1))
+prub = list()
+
+prub[[1]] <- glmer(PRUB ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+prub[[2]] <- glmer(PRUB ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
+
 # response is constant since there was just one count
 
 
