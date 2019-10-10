@@ -8,6 +8,7 @@ library(tidyr)
 library(dplyr)
 library(lme4)
 library(ggplot2)
+library(lubridate)
 
 sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
