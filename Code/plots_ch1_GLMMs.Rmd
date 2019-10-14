@@ -1,0 +1,167 @@
+---
+title: "Plots for Chapter 1"
+author: "Jacey Brooks"
+date: "10/11/2019"
+output: pdf_document
+---
+
+```{r, setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+
+counts <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data.csv", stringsAsFactors = FALSE)
+
+counts_long <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data_by_species_long.csv", stringsAsFactors = FALSE)
+
+substrate <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Location_Transect_Stream_Features_processed.csv", stringsAsFactors = FALSE)
+
+# Reduce life stage/age into one column for each species
+spec <- sal %>%
+  ungroup() %>%
+  dplyr::select(-type, -up_down, -dist, - visit, -total, -observers, -time_min, -air, -pH, -water, -DO, -EC, -TDS) %>%
+  group_by(date, stream, transect) %>%
+  pivot_longer(cols = c(DFUSL, DFUSA, DOCHL, DOCHA, DMONL, DMONA, EBISL, EBISA, GPORL, GPORA, PRUBL, PRUBA), names_to = "species" ) %>%
+  mutate(spec = substr(species, start = 1, stop = 4)) %>%
+  select(-species) %>%
+  group_by(date, stream, transect, spec) %>%
+  summarise_all(sum) %>%
+  pivot_wider(names_from = spec, values_from = value)
+
+sallies <- sal %>%
+  left_join(spec) %>%
+  select(-DFUSA, -DFUSL, -DOCHL, -DOCHA, -DMONL, -DMONA, -EBISL, -EBISA, -GPORL, -GPORA, -PRUBL, -PRUBA) %>%
+  mutate(stream_trans = paste0(stream, "_", transect),
+         transect_num = as.integer(as.factor(transect)),
+         date = mdy(date),
+         up_down = ifelse(is.na(up_down), "REF", up_down))
+
+# means and sd's
+type <- sallies %>%
+  dplyr::select(stream, type, transect, up_down)
+
+sub <- substrate %>%
+  select(-Date, - Visit, - Section, -X) %>%
+  mutate(perc_s.c = (S.C/25)*100,
+         perc_sand = (Sand/25)*100,
+         perc_gravel = (Gravel/25)*100,
+         perc_cobble = (Cobble/25)*100,
+         perc_boulder = (Boulder/25)*100,
+         perc_debris = (Debris/25)*100) %>%
+  select(-S.C, -Sand, -Gravel, -Cobble, -Boulder, -Debris) %>%
+  group_by(Stream, Transect) %>%
+  summarise_all(mean, na.rm = FALSE)
+colnames(sub) <- c("stream", "transect", "bankfull", "silt_clay", "sand", "gravel", "cobble", "boulder", "debris")
+
+sal_means <- sallies %>%
+  group_by(stream, transect) %>%
+  dplyr::select(-date, -observers, -visit, -stream_trans, -transect_num, -type, -up_down) %>%
+  summarise_all(mean, na.rm = TRUE) %>%
+  left_join(type) %>%
+  distinct() %>%
+  left_join(sub)
+
+# dsal_sds <- sal %>%
+#   group_by(stream, type, transect, up_down) %>%
+#   dplyr::select(-date, -observers, -visit) %>%
+#   summarise_all(sd, na.rm = TRUE)
+
+```
+
+## Overview
+
+This is a general overview of the surveys/counts.
+
+```{r, overview, echo=FALSE}
+# Graph of average count per transect by species
+ggplot(stack(counts_long), aes(x=ind, y=values)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Species") + ylab("Individuals/Transect")
+# ggplot(sal_means, aes(x = reorder(type, GPORL, FUN = mean), GPORL)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
+
+
+```
+
+## GLMM Results
+
+### Statistically significant results
+
+This was the only statistically significant covariate in all of the models that I ran. This pattern is really neat and shows that all of the DMON individuals 
+
+```{r, dmon-pH, include = TRUE, results = "hide"}
+ggplot(sallies, aes(pH, DMON)) + geom_point() + geom_smooth(method = "glm")
+```
+
+## Other metrics not included in the GLMMs
+
+```{r, sallies - percent silt/clay, include = TRUE, results = "hide"}
+ggplot(sal_means, aes(silt_clay, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Silt/Clay") + ylab("Average number of individuals caught per plot")
+```
+
+
+
+```{r, sallies - percent sand, include = TRUE, results = "hide"}
+ggplot(sal_means, aes(sand, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Sand") + ylab("Average number of individuals caught per plot")
+```
+
+
+```{r, sallies - percent cobble, include = TRUE, results = "hide"}
+ggplot(sal_means, aes(cobble, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Cobble") + ylab("Average number of individuals caught per plot")
+```
+
+```{r, sallies - bankfull, include = TRUE, results = "hide"}
+ggplot(sal_means, aes(bankfull, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Bankfull Width (cm)") + ylab("Average number of individuals caught per plot")
+```
+
+## Characterizing the stream
+
+```{r, DO, include = TRUE, results = "hide", include = TRUE, results = "hide"}
+dox <- sal_means %>%
+  select(stream, DO) %>%
+  distinct() 
+  
+ggplot(dox, aes(x= stream, y = DO)) + theme_classic() + xlab("Stream") + ylab("Dissolved Oxygen (ppm)")
+```
+Dissolved oxygen not worth mentioning...
+
+
+```{r, pH, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, pH, FUN = median), pH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+
+```{r, EC, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+
+```
+
+
+```{r, DFUS, include = TRUE, results = "hide"}
+par(mfrow = c(2:3))
+ggplot(sallies, aes(x = reorder(up_down, DFUS, FUN = median), DFUS)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+
+```
+
+
+```{r, DMON, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, DMON, FUN = median), DMON)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+```{r, DOCH, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, DOCH, FUN = median), DOCH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+```{r, EBIS, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, DOCH, FUN = median), DOCH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+```{r, GPOR, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, GPOR, FUN = median), GPOR)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+```{r, PRUB, include = TRUE, results = "hide"}
+ggplot(sallies, aes(x = reorder(up_down, PRUB, FUN = median), PRUB)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```
+
+
