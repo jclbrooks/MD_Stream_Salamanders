@@ -187,6 +187,9 @@ prub = list()
 prub[[1]] <- glmer(PRUB ~ water + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
 prub[[2]] <- glmer(PRUB ~ pH + EC + mean_wetted_width + (1 | transect_num), family = poisson, data = sal_all)
 
+model_names = c("water + mean_wetted_width", "pH + EC + mean_wetted_width")
+aictab(cand.set = prub, modnames = model_names)
+
 # response is constant since there was just one count
 
 
