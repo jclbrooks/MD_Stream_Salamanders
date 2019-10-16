@@ -123,6 +123,30 @@ str(daymet_df)
 
 ##### need 2018 data
 
+library(daymetr)
+
+wmd_coords <- read_csv("Data/WMD_sites_lat_lon_coords.csv")
+
+wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/WMD_sites_lat_lon_coords.csv',
+                      start = 1980,
+                      end = 2018,
+                      internal = TRUE,
+                      simplify = TRUE,
+                      silent = TRUE)
+
+str(wmd_daymet_batch)
+
+wmd_daymet <- wmd_daymet_batch %>%
+  group_by(site, year, yday) %>%
+  select(site, year, yday, measurement, value) %>%
+  pivot_wider(names_from = measurement, values_from = value) %>%
+  select(site, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
+  mutate(airTemp = (tmax + tmin) / 2) %>%
+  ungroup()
+
+str(wmd_daymet)
+
+wmd_daymet
 
 #-------------------- Restructure and combine data----------------
 climateData <- data.frame(daymet_df, stringsAsFactors = FALSE)
