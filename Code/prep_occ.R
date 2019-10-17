@@ -16,26 +16,29 @@ summary(df_occ) # missing dates :( - deal with this using the "Data/featureids_f
 
 # Reduce (summarize) occupancy data to species (not stage/age)
 df_occ1 <- df_occ %>%
-  mutate(transect_num = as.integer(as.factor(transect)),
-         year = year(date)) %>%
+  mutate(year = year(date)) %>%
   mutate(year = if_else(region == "WMaryland", 2018, year)) %>%
-  dplyr::select(transect_num, year, species, pass1, pass2, pass3, pass4) %>% # maybe include other variables as covariates
-  group_by(transect_num, year, species) %>%
+  dplyr::select(transect, region, year, species, pass1, pass2, pass3, pass4) %>% # maybe include other variables as covariates
+  group_by(transect, region, year, species) %>%
   summarise_all(max)
 
 summary(df_occ1)
 
 # Rearrange covariates so they are in the same order (by featureid)
-df_occ_all <- df_occ %>%
-  left_join(featureids_matched) %>%
-  filter(!is.na(featureid)) 
+df_featureid <- featureids_matched %>%
+  select(transect, featureid) %>%
+  distinct()
+
+df_occ_all <- df_occ1 %>%
+  left_join(df_featureid) # %>%
+  # filter(!is.na(featureid)) 
   
+summary(df_occ_all)
+
 df_covariates1 <- df_covariates %>%
-  select(featureid, zone, riparian_distance_ft, agriculture, alloffnet, allonnet, AreaSqKM, devel_hi, developed, drainageclass, elevation, forest, impervious, slope_pcnt, surfcoarse, tree_canopy, impound_area) %>%
-  filter(zone == "local") # decide zone local or upstream
-  
-climate_data_means <- climate_data_means %>%
-  rename(tmax_mean = tmax, air_mean = airTemp, prcp_mo_mean = prcp_mo, swe_mean = swe) # problem with daily and summary climate having the same names - change for means
+  filter(zone == "local",
+         is.na(riparian_distance_ft)) %>% # decide zone local or upstream
+  select(featureid, zone, AreaSqKM, devel_hi, developed, elevation, forest, impervious, slope_pcnt, impound_area)
 
 # select just daily weather data of interest
 
@@ -44,38 +47,56 @@ climate_data_means <- climate_data_means %>%
 df_occ_all <- df_occ_all %>%
   left_join(df_covariates1) %>%
   left_join(df_hucs) %>%
-  left_join(tempData) %>%
-  left_join(climate_data_means)
+  # left_join(tempData) %>%
+  left_join(climate_data_means) %>%
+  filter(!is.na(featureid)) %>%
+  ungroup() %>%
+  mutate(transect_num = as.integer(as.factor(transect)))
   
 summary(df_occ_all) # check for NA and reasonable values
+str(df_occ_all)
 
-############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW
+############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW - will only work if add western maryland separately or have pass in long format with dates to join in with daily covariates then spread
 
 # get numbers of transects, passes, and years for 3D array
-species <- unique(df_occ1$species)
+species <- unique(df_occ_all$species)
 
-n_sites <- length(unique(df_occ1$transect_num))
+n_sites <- length(unique(df_occ_all$transect_num))
 n_passes <- 4
-n_years <- length(unique(df_occ1$year))
+n_years <- length(unique(df_occ_all$year))
 
 n_sites * n_years
 n_sites * n_years * length(species)
 
+n_huc12 <- length(unique(df_occ_all$huc12))
+n_huc10 <- length(unique(df_occ_all$huc10))
+
 # occ1 should be expanded to 3546 to make into complete array - might work as build array?
 
-transect_num <- unique(df_occ1$transect_num)
-year <- unique(df_occ1$year)
+transect_num <- unique(df_occ_all$transect_num)
+year <- unique(df_occ_all$year)
 
 combos <- expand_grid(transect_num, year, species) %>%
-  arrange(species, transect_num, year)
+  arrange(species, transect_num, year) %>%
+  ungroup()
 
+
+covs <- df_occ_all %>% # probelm with 2018 with no pass 1?
+  select(-pass1, -pass2, -pass3, -pass4, -species, - year) %>%
+  distinct() %>%
+  arrange(desc(region), transect_num)
+
+head(covs) # western maryland at the beginning
 
 # Separate by species and make into 3D array with transect x pass x year
 
-#DFUS
+# DFUS
 dfus <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "DFUS") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  ungroup() %>%
+  dplyr::filter(species == "DFUS") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(dfus)
   
@@ -91,8 +112,10 @@ saveRDS(dfus_3d, "Data/Derived/dfus_3d.rds")
 
 # DMON
 dmon <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "DMON") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "DMON") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(dmon)
   
@@ -108,8 +131,10 @@ saveRDS(dmon_3d, "Data/Derived/dmon_3d.rds")
 
 #DOCH
 doch <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "DOCH") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "DOCH") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(doch)
   
@@ -125,8 +150,10 @@ saveRDS(doch_3d, "Data/Derived/doch_3d.rds")
 
 #EBIS
 ebis <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "EBIS") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "EBIS") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(ebis)
   
@@ -142,8 +169,10 @@ saveRDS(ebis_3d, "Data/Derived/ebis_3d.rds")
 
 #EGUT
 egut <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "EGUT") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "EGUT") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(egut)
   
@@ -159,8 +188,10 @@ saveRDS(egut_3d, "Data/Derived/egut_3d.rds")
 
 #ELON
 elon <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "ELON") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "ELON") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(elon)
   
@@ -176,8 +207,10 @@ saveRDS(elon_3d, "Data/Derived/elon_3d.rds")
 
 #GPOR
 gpor <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "GPOR") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "GPOR") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(gpor)
   
@@ -193,8 +226,10 @@ saveRDS(gpor_3d, "Data/Derived/gpor_3d.rds")
 
 #PRUB
 prub <- combos %>%
-  left_join(df_occ1) %>%
-  dplyr::filter(species == "PRUB") # probelm with 2018 with no pass 1?
+  left_join(df_occ_all) %>%
+  dplyr::filter(species == "PRUB") %>% # probelm with 2018 with no pass 1?
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(region, transect_num, year)
   
 summary(prub)
   

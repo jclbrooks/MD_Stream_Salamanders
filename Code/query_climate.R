@@ -125,9 +125,9 @@ str(daymet_df)
 
 library(daymetr)
 
-wmd_coords <- read_csv("Data/WMD_sites_lat_lon_coords.csv")
+# wmd_coords <- read_csv("Data/WMD_sites_lat_lon_coords.csv")
 
-wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/WMD_sites_lat_lon_coords.csv', # maybe do for all locations to get 2018
+wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/all_sites_coords.csv', # maybe do for all locations to get 2018
                       start = 2018,
                       end = 2018,
                       internal = TRUE,
@@ -167,28 +167,31 @@ tempData <- climateData %>%
                 airTemp = (tmax + tmin) / 2) %>% # Add seasons to summarize by later??
   left_join(featureids_matched)
 
-tempData <- bind_rows(tempData, wmd_daymet) # adding in 2018 daymet
+tempData <- bind_rows(tempData, wmd_daymet) %>% # adding in 2018 daymet
+  mutate(site = as.integer(as.factor(featureid)))
 
 # site = as.numeric(as.factor((featureid)))
 
 # create separate dataframe with just longer term norms related to occupancy
 # summarize by year (or seasons first?) and then means across years
 climate_data_means <- tempData %>%
-  group_by(featureid, year) %>%
-  select(featureid, year, tmax, airTemp, prcp, swe) %>%
+  group_by(featureid, site, year) %>%
+  select(featureid, site, year, tmax, airTemp, prcp, swe) %>%
   summarise(tmax = max(tmax), airTemp = mean(airTemp), prcp_mo = sum(prcp)/12, swe = sum(swe)) %>%
   ungroup() %>%
   select(-year) %>%
   group_by(featureid) %>%
-  summarise_all(mean) # just overall wetter or cooler sites?
+  summarise_all(mean) %>% # just overall wetter or cooler sites?
+  rename(tmax_mean = tmax, air_mean = airTemp, prcp_mo_mean = prcp_mo, swe_mean = swe) # problem with daily and summary climate having the same names - change for means
+
 
 summary(climate_data_means)
 
 # detection weather variables - rolling means
 # filter to years with observed data?
 tempData <- tempData %>%
-  group_by(site, year) %>%
-  arrange(site, date) %>%
+  group_by(featureid, site, year) %>%
+  arrange(featureid, site, date) %>%
   mutate(airTempLagged1 = lag(airTemp, n = 1, fill = NA),
          #airTempLagged2 = lag(airTemp, n = 2, fill = NA),
          #prcpLagged1 = lag(prcp, n = 1, fill = NA),
