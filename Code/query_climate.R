@@ -127,8 +127,8 @@ library(daymetr)
 
 wmd_coords <- read_csv("Data/WMD_sites_lat_lon_coords.csv")
 
-wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/WMD_sites_lat_lon_coords.csv',
-                      start = 1980,
+wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/WMD_sites_lat_lon_coords.csv', # maybe do for all locations to get 2018
+                      start = 2018,
                       end = 2018,
                       internal = TRUE,
                       simplify = TRUE,
@@ -136,26 +136,40 @@ wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/WMD_sites_lat_lo
 
 str(wmd_daymet_batch)
 
+featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv") %>%
+  select(transect, featureid) %>%
+  distinct()
+
 wmd_daymet <- wmd_daymet_batch %>%
   group_by(site, year, yday) %>%
   select(site, year, yday, measurement, value) %>%
   pivot_wider(names_from = measurement, values_from = value) %>%
-  select(site, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
-  mutate(airTemp = (tmax + tmin) / 2) %>%
-  ungroup()
+  select(transect = site, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
+  mutate(airTemp = (tmax + tmin) / 2,
+         date = as.Date(yday-1, origin = paste0(year, "-01-01"))) %>%
+  select(-yday) %>%
+  ungroup() %>%
+  left_join(featureids_matched)
 
-str(wmd_daymet)
-
-wmd_daymet
+# str(wmd_daymet)
+# 
+# wmd_daymet
 
 #-------------------- Restructure and combine data----------------
+
+
 climateData <- data.frame(daymet_df, stringsAsFactors = FALSE)
 
 tempData <- climateData %>%
-  dplyr::mutate(site = as.numeric(as.factor((featureid))),
-                year = year(date),
-                dOY = yday(date),
-                airTemp = (tmax + tmin) / 2) # Add seasons to summarize by later??
+  select(featureid, date, prcp, swe, tmax, tmin) %>%
+  dplyr::mutate(year = year(date),
+                # dOY = yday(date),
+                airTemp = (tmax + tmin) / 2) %>% # Add seasons to summarize by later??
+  left_join(featureids_matched)
+
+tempData <- bind_rows(tempData, wmd_daymet) # adding in 2018 daymet
+
+# site = as.numeric(as.factor((featureid)))
 
 # create separate dataframe with just longer term norms related to occupancy
 # summarize by year (or seasons first?) and then means across years
@@ -204,7 +218,7 @@ saveRDS(df_covariates, file = "Data/Derived/landscape.rds")
 saveRDS(df_hucs, file = "Data/Derived/hucs.rds")
 saveRDS(tempData, file = "Data/Derived/daymet_daily.rds")
 saveRDS(climate_data_means, file = "Data/Derived/daymet_means.rds")
-
+saveRDS(wmd_daymet, file = "Data/Derived/daymet_means_md.rds")
 # library(foreign)
 # write.dbf(data.frame(df_featureid_200, stringsAsFactors = FALSE), file = paste0(data_dir, "/featureid_list_20160602.dbf"))
 
