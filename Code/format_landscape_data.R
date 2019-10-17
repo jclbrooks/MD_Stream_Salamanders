@@ -52,28 +52,21 @@ southofpotomac_prw <- landscape_characteristics %>%
   distinct()
 southofpotomac_list <- as.list(southofpotomac_prw)
 
-prw <- c("PRW101-1R","PRW101-2L","PRW101-3R", "PRW101-4L", "PRW114-1R", "PRW114-2L", "PRW114-3R", "PRW114-4L", "PRW127-1R", "PRW127-2L", "PRW127-3L", "PRW127-4R", "PRW146-1L", "PRW146-2R", "PRW146-A1", "PRW146-A2", "PRW157-1",  "PRW157-2", "PRW157-3",  "PRW157-4",  "PRW157-A1", "PRW157-A2", "PRW172-1R", "PRW172-2L", "PRW172-A1", "PRW172-A2", "PRW226-1R", "PRW226-2L", "PRW226-3R", "PRW226-4L", "PRW226-A1", "PRW226-A2", "PRW227-1L", "PRW227-2R", "PRW227-3L", "PRW227-4L", "PRW227-A1", "PRW227-A2", "PRW247-1R", "PRW247-2L", "PRW247-3R", "PRW247-4L", "PRW262-1",  "PRW262-2",  "PRW262-3", "PRW262-4",  "PRW263-1",  "PRW263-2", "PRW263-3","PRW263-4",  "PRW263-A1", "PRW263-A2", "PRW301-1R", "PRW301-2L", "PRW301-3R", "PRW301-4L", "PRW314-1R", "PRW314-2L", "PRW314-3L", "PRW314-4R", "PRW315-1L", "PRW315-2R", "PRW315-3L", "PRW315-4R", "PRW331-1R", "PRW331-2L", "PRW331-3L", "PRW331-4L", "PRW370-1", "PRW370-2",  "PRW370-3",  "PRW370-4", "PRW371-1",  "PRW371-2",  "PRW371-3", "PRW371-4",  "PRW424-1L", "PRW424-2R", "PRW424-3L", "PRW424-4R", "PRW516-1L", "PRW516-2R", "PRW516-3L", "PRW516-4R")
-as.list(prw)
-# These are all sites south of the Potomac in the Prince William Forest National Park, the only other sites south of the Potomac are COST28-2 and COST8-3, but the lat/lon that was given is questionable, we might leave these two sites out
+prw <- c("PRW101-1R","PRW101-2L","PRW101-3R", "PRW101-4L", "PRW114-1R", "PRW114-2L", "PRW114-3R", "PRW114-4L", "PRW127-1R", "PRW127-2L", "PRW127-3L", "PRW127-4R", "PRW146-1L", "PRW146-2R", "PRW146-A1", "PRW146-A2", "PRW157-1",  "PRW157-2", "PRW157-3",  "PRW157-4",  "PRW157-A1", "PRW157-A2", "PRW172-1R", "PRW172-2L", "PRW172-A1", "PRW172-A2", "PRW226-1R", "PRW226-2L", "PRW226-3R", "PRW226-4L", "PRW226-A1", "PRW226-A2", "PRW227-1L", "PRW227-2R", "PRW227-3L", "PRW227-4L", "PRW227-A1", "PRW227-A2", "PRW247-1R", "PRW247-2L", "PRW247-3R", "PRW247-4L", "PRW262-1",  "PRW262-2",  "PRW262-3", "PRW262-4",  "PRW263-1",  "PRW263-2", "PRW263-3","PRW263-4",  "PRW263-A1", "PRW263-A2", "PRW301-1R", "PRW301-2L", "PRW301-3R", "PRW301-4L", "PRW314-1R", "PRW314-2L", "PRW314-3L", "PRW314-4R", "PRW315-1L", "PRW315-2R", "PRW315-3L", "PRW315-4R", "PRW331-1R", "PRW331-2L", "PRW331-3L", "PRW331-4L", "PRW370-1", "PRW370-2",  "PRW370-3",  "PRW370-4", "PRW371-1",  "PRW371-2",  "PRW371-3", "PRW371-4",  "PRW424-1L", "PRW424-2R", "PRW424-3L", "PRW424-4R", "PRW516-1L", "PRW516-2R", "PRW516-3L", "PRW516-4R") # These are all sites south of the Potomac in the Prince William Forest National Park, the only other sites south of the Potomac are COST28-2 and COST8-3, but the lat/lon that was given is questionable, we might leave these two sites out
 
 spec_dist <- landscape_vars %>%
   ungroup() %>%
   select(transect, Capital, Canaan, Shenandoah, WMaryland) %>%
   mutate(DFUS = 1,
-         DMON = NA_real_,
-         DOCH = NA_real_,
          EBIS = 1,
-         GPOR = NA_real_,
-         EGUT = NA_real_,
-         ELON = NA_real_,
+         ELON = ifelse(!(transect %in% prw), 1, 0),
          PRUB = 1,
          DMON = ifelse(Capital == 1, 0, 1),
-         DMON = ifelse(transect == "COST22-1", 1, DMON),
          DOCH = ifelse(WMaryland == 1 | Canaan == 1, 1, 0),
          GPOR = ifelse(Capital == 1, 0, 1),
-         EGUT = ifelse(transect == c("PRW101-1R","PRW101-2L","PRW101-3R", "PRW101-4L", "PRW114-1R", "PRW114-2L", "PRW114-3R", "PRW114-4L", "PRW127-1R", "PRW127-2L", "PRW127-3L", "PRW127-4R", "PRW146-1L", "PRW146-2R", "PRW146-A1", "PRW146-A2", "PRW157-1",  "PRW157-2", "PRW157-3",  "PRW157-4",  "PRW157-A1", "PRW157-A2", "PRW172-1R", "PRW172-2L", "PRW172-A1", "PRW172-A2", "PRW226-1R", "PRW226-2L", "PRW226-3R", "PRW226-4L", "PRW226-A1", "PRW226-A2", "PRW227-1L", "PRW227-2R", "PRW227-3L", "PRW227-4L", "PRW227-A1", "PRW227-A2", "PRW247-1R", "PRW247-2L", "PRW247-3R", "PRW247-4L", "PRW262-1",  "PRW262-2",  "PRW262-3", "PRW262-4",  "PRW263-1",  "PRW263-2", "PRW263-3","PRW263-4",  "PRW263-A1", "PRW263-A2", "PRW301-1R", "PRW301-2L", "PRW301-3R", "PRW301-4L", "PRW314-1R", "PRW314-2L", "PRW314-3L", "PRW314-4R", "PRW315-1L", "PRW315-2R", "PRW315-3L", "PRW315-4R", "PRW331-1R", "PRW331-2L", "PRW331-3L", "PRW331-4L", "PRW370-1", "PRW370-2",  "PRW370-3",  "PRW370-4", "PRW371-1",  "PRW371-2",  "PRW371-3", "PRW371-4",  "PRW424-1L", "PRW424-2R", "PRW424-3L", "PRW424-4R", "PRW516-1L", "PRW516-2R", "PRW516-3L", "PRW516-4R", "COST28-2", "COST8-3" , 1, 0)))
-         
-
+         EGUT = ifelse(transect %in% prw, 1, 0)) %>%
+  mutate(DMON = ifelse(transect == "COST22-1", 1, DMON)) %>%
+  filter(!(transect %in% c("COST28-2", "COST8-3", "Fairway18-1", "COST21-3", "Picnic 21-1")))
 
 
 

@@ -12,16 +12,23 @@ featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv")
 
 
 str(df_occ)
-summary(df_occ) # missing dates :(
+summary(df_occ) # missing dates :( - deal with this using the "Data/featureids_for_DAYMET_data.csv" :)
 
-df_occ %>%
-  filter(is.na(date))
+# Reduce (summarize) occupancy data to species (not stage/age)
+df_occ1 <- df_occ %>%
+  mutate(transect_num = as.integer(as.factor(transect)),
+         year = year(date)) %>%
+  mutate(year = if_else(region == "WMaryland", 2018, year)) %>%
+  dplyr::select(transect_num, year, species, pass1, pass2, pass3, pass4) %>% # maybe include other variables as covariates
+  group_by(transect_num, year, species) %>%
+  summarise_all(max)
+
+summary(df_occ1)
 
 # Rearrange covariates so they are in the same order (by featureid)
-
 df_occ_all <- df_occ %>%
   left_join(featureids_matched) %>%
-  filter(!is.na(featureid)) ## not sure if we need this??
+  filter(!is.na(featureid)) 
   
 df_covariates1 <- df_covariates %>%
   select(featureid, zone, riparian_distance_ft, agriculture, alloffnet, allonnet, AreaSqKM, devel_hi, developed, drainageclass, elevation, forest, impervious, slope_pcnt, surfcoarse, tree_canopy, impound_area) %>%
@@ -38,23 +45,11 @@ df_occ_all <- df_occ_all %>%
   left_join(df_covariates1) %>%
   left_join(df_hucs) %>%
   left_join(tempData) %>%
-  left_join(climate_data_means) 
-
+  left_join(climate_data_means)
+  
 summary(df_occ_all) # check for NA and reasonable values
 
 ############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW
-
-# Reduce (summarize) occupancy data to species (not stage/age)
-
-df_occ1 <- df_occ %>%
-  mutate(transect_num = as.integer(as.factor(transect)),
-         year = year(date)) %>%
-  mutate(year = if_else(region == "WMaryland", 2018, year)) %>%
-  dplyr::select(transect_num, year, species, pass1, pass2, pass3, pass4) %>% # maybe include other variables as covariates
-  group_by(transect_num, year, species) %>%
-  summarise_all(max)
-
-summary(df_occ1)
 
 # get numbers of transects, passes, and years for 3D array
 species <- unique(df_occ1$species)
