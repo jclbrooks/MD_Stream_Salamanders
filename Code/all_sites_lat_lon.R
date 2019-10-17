@@ -52,13 +52,14 @@ all_coords <- df_occ %>%
   left_join(all_sites, by = "transect") %>%
   select(transect, lat, lon) %>%
   distinct()
-colnames(all_sites) <- c("site", "lat", "lon")
+colnames(all_coords) <- c("site", "lat", "lon")
   
 head(all_coords)
 
+all_coords <- all_coords %>%
+  filter(!site %in% c("COST27/28-3", "COST27/28-4")) # these sites can't get pulled from daymet for some reason - could try nearby sites or just ignore. Could be the slashes in the names
 
-
-# write.csv(all_coords, "Data/all_sites_coords.csv")
+write.csv(all_coords, "Data/all_sites_coords.csv", row.names = FALSE)
 
 
 

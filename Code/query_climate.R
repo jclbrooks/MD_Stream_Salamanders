@@ -125,25 +125,40 @@ str(daymet_df)
 
 library(daymetr)
 
-# wmd_coords <- read_csv("Data/WMD_sites_lat_lon_coords.csv")
+wmd_coords <- read_csv("Data/all_sites_coords.csv")
 
 wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/all_sites_coords.csv', # maybe do for all locations to get 2018
                       start = 2018,
                       end = 2018,
                       internal = TRUE,
                       simplify = TRUE,
-                      silent = TRUE)
+                      silent = TRUE) 
+
+# wmd_daymet_batch <- wmd_daymet_batch %>%
+#   mutate(latitude = as.numeric(latitude),
+#          longitude = as.numeric(longitude),
+#          altitude = as.numeric(altitude),
+#          year = as.integer(year),
+#          yday = as.integer(yday),
+#          value = as.numeric(value)) %>%
+#   select(site, year, yday, measurement, value) %>%
+#   distinct() %>%
+#   data.frame(., stringsAsFactors = FALSE)
 
 str(wmd_daymet_batch)
+summary(wmd_daymet_batch)
 
 featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv") %>%
   select(transect, featureid) %>%
   distinct()
 
 wmd_daymet <- wmd_daymet_batch %>%
-  group_by(site, year, yday) %>%
   select(site, year, yday, measurement, value) %>%
-  pivot_wider(names_from = measurement, values_from = value) %>%
+  distinct() %>%
+  group_by(site, year, yday) %>%
+  # mutate(Value = value) %>%
+  # filter(!is.na(value)) %>%
+  pivot_wider(names_from = measurement, values_from = value, values_fn = list(value = mean)) %>%
   select(transect = site, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
   mutate(airTemp = (tmax + tmin) / 2,
          date = as.Date(yday-1, origin = paste0(year, "-01-01"))) %>%
@@ -154,6 +169,7 @@ wmd_daymet <- wmd_daymet_batch %>%
 # str(wmd_daymet)
 # 
 # wmd_daymet
+# summary(wmd_daymet)
 
 #-------------------- Restructure and combine data----------------
 
