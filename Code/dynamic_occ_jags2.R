@@ -39,29 +39,22 @@ covs <- readRDS("Data/Derived/covs.rds")
 # psi fixed mean prob (intercept) that only varies by region
 # problem if p varies randomly by site and pass
 
-sink("Code/JAGS/dynamic_autologistic_occ.txt")
+sink("Code/JAGS/dynamic_autologistic_occ2.txt")
 cat("
     model {
       
       # Priors    
       
-      mu_psi ~ dnorm(0, pow(2, -2))
-      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
+      # mu_psi ~ dnorm(0, pow(2, -2))
+      # sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
       
-      mu_p ~ dnorm(0, pow(2, -2))
-      sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
+      # mu_p ~ dnorm(0, pow(2, -2))
+      # sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
       
-      # doesn't work with random effects by site and year on b0 and b1
-      mu_b0 ~ dnorm(0, pow(2, -2))
-      sd_b0 ~ dt(0, pow(1.5,-2), 1)T(0, )
+      #for(i in 1:n_huc12) {
+      #  b0_psi[i] ~ dnorm(mu_psi, sd_psi)
+      # }
       
-      mu_b1 ~ dnorm(0, pow(2, -2))
-      sd_b1 ~ dt(0, pow(1.5,-2), 1)T(0, )
-      
-      for(i in 1:n_huc12) {
-        logit_psi1[i] ~ dnorm(mu_psi, sd_psi)
-        logit(psi1[i]) <- logit_psi1[i] 
-      }
       
       a0_p ~ dnorm(0, pow(2, -2)) # fixed intercept
       a1 ~ dnorm(-1, pow(2, -2))  # behavioral effect for reduced detect with removal
@@ -69,34 +62,35 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates
+          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp
           }
         }
       } 
       
-      # colonization and extinction not separable with data with both as random effects
-      # for(i in 1:n_sites) {
-      #   for(t in 1:(n_years - 1)) {
-      #     b0[i, t] ~ dnorm(mu_b0, 1/ sd_b0 / sd_b0) # colonization prob
-      #     b1[i,t] ~ dnorm(mu_b1, 1 / sd_b1 / sd_b1) # survival prob
-      #   }
-      # }
+      mu_b0 ~ dnorm(0, pow(2, -2))
+      b1 ~ dnorm(0, pow(2, -2))
+      b2 ~ dnorm(0, pow(2, -2))
+      b3 ~ dnorm(0, pow(2, -2))
+      b4 ~ dnorm(0, pow(2, -2))
+      b5 ~ dnorm(0, pow(2, -2))
+      mu_b6 ~ dnorm(0, pow(2, -2))
       
-      # consider fixed effect by region
-        for(t in 1:(n_years - 1)) {
-          b0[t] ~ dnorm(mu_b0, pow(sd_b0, -2)) # colonization prob
-          b1[t] ~ dnorm(mu_b1, pow(sd_b1, -2)) # survival prob
-        }
+      sd_b0 ~ dt(0, pow(1.5,-2), 1)T(0, )
+      sd_b6 ~ dt(0, pow(1.5,-2), 1)T(0, )
+      
+      for(h in 1:n_huc12) {
+        b0[h] ~ dnorm(mu_b0, sd_b0)
+        b6[h] ~ dnorm(mu_b6, sd_b6)
+      }
       
       # Process model
       for(i in 1:n_sites) { # sites or transects or streams?
-        Z[i, 1] ~ dbern(psi1[i])
+        logit(psi[i, 1]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] # multiple the whole thing by vector of species range
+        Z[i, 1] ~ dbern(psi[i, 1])
+        
         for(t in 2:n_years) {
-          logit(mu_Z[i, t]) <- b0[t-1] + b1[t-1] * Z[i, t-1] 
-          
-          
-          # b0[i, t-1] + b1[i, t-1] * Z[i, t-1] # + b2 * region[i] + b3 * forest[i] + b4 * temp[i] + b5 * region[i] * Z[i, t-1] + b6 * forest[i] * Z[i, t-1] + b7 * temp[i] * Z[i, t-1] # random stream or HUC
-          Z[i, t] ~ dbern(mu_Z[i, t])
+          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b5 * area[i] + b6[huc[i]] * Z[i, t-1]
+          Z[i, t] ~ dbern(psi[i, t])
         }
       }
       
@@ -111,7 +105,7 @@ cat("
       }
       
       # Derived parameters?
-      mean_psi <- mean(psi1[ ])
+      mean_psi <- mean(psi[ , ])
       mean_p <- mean(p[ , 1, ])
       
       for(t in 1:n_years) {
@@ -132,11 +126,19 @@ sink()
 
 
 # make data list for JAGS
+
 dfus_data <- list(y = dfus_3d, 
                   n_sites = dim(dfus_3d)[1], 
                   n_passes = dim(dfus_3d)[2],
-                  n_years = dim(dfus_3d)[3])
-
+                  n_years = dim(dfus_3d)[3],
+                  n_huc12 = 25,
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)))
+                  
 # Good starting values for occupancy = max over passes
 dfus_init <- apply(dfus_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
 fill_len <- length(dfus_init[dfus_init == -Inf]) # how many site-years with no obs
@@ -152,21 +154,24 @@ params_autlog <- c(# "Z",
   "mean_p",
   "a0_p",
   "a1",
+  "mu_b0",
+  "mu_b6",
+  "sd_b0",
+  "sd_b6",
+  "b1",
+  "b2",
+  "b3",
+  "b4",
+  "b5",
   "mu_p",
   "sd_p",
-  "mu_psi",
-  "sd_psi",
   "Z_sum",
-  "mu_b0",
-  "mu_b1",
-  "sd_b0",
-  "sd_b1",
   "turnover")
 
 autlog <- jags(data = dfus_data,
                inits = inits,
                parameters.to.save = params_autlog,
-               model.file = "Code/JAGS/dynamic_autologistic_occ.txt",
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
                n.chains = nc,
                n.adapt = na,
                n.iter = ni,
@@ -302,104 +307,3 @@ plot(out, parameters = c("p"))
 
 
 
-
-####### - static with correlation by site --------
-
-sink("Code/JAGS/static_occ.txt")
-cat("
-    model {
-      
-      # Priors    
-      
-      mu_psi ~ dnorm(0, pow(2, -2))
-      sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, )
-      
-      mu_p ~ dnorm(0, pow(2, -2))
-      sd_p ~ dt(0, pow(2.5,-2), 1)T(0, )
-      
-      # doesn't work with random effects by site and year on b0 and b1
-      mu_b0 ~ dnorm(0, pow(3, -2))
-      sd_b0 ~ dt(0, pow(1,-2), 1)T(0, )
-      
-      mu_b1 ~ dnorm(0, pow(3, -2))
-      sd_b1 ~ dt(0, pow(1,-2), 1)T(0, )
-      
-      for(i in 1:n_sites) {
-        logit_psi1[i] ~ dnorm(mu_psi, sd_psi)
-        logit(psi1[i]) <- logit_psi1[i] 
-      }
-      
-      for(i in 1:n_sites) {
-        for(t in 1:n_years) {
-          a0_p[i,t] ~ dnorm(mu_p, sd_p)
-          logit(p[i,t]) <- a0_p[i,t]
-        }
-      }
-      
-      # colonization and extinction not separable with data with both as random effects
-      for(i in 1:n_sites) {
-        # for(t in 1:(n_years - 1)) {
-          b0[i] ~ dnorm(mu_b0, 1/ sd_b0 / sd_b0) # colonization prob
-          # b1[i,t] ~ dnorm(mu_b1, 1 / sd_b1 / sd_b1) # survival prob
-        }
-      # }
-      
-      # consider fixed effect by region
-        for(t in 1:(n_years - 1)) {
-          # b0[t] ~ dnorm(mu_b0, pow(sd_b0, -2)) # colonization prob
-          b1[t] ~ dnorm(mu_b1, pow(sd_b1, -2)) # survival prob
-        }
-      
-      # Process model
-      for(i in 1:n_sites) { # sites or transects or streams?
-        Z[i, 1] ~ dbern(psi1[i])
-        for(t in 2:n_years) {
-          logit(mu_Z[i, t]) <- b0[i] + b1[t-1] # * Z[i, t-1] # b0[i, t-1] + b1[i, t-1] * Z[i, t-1] # + b2 * region[i] + b3 * forest[i] + b4 * temp[i] + b5 * region[i] * Z[i, t-1] + b6 * forest[i] * Z[i, t-1] + b7 * temp[i] * Z[i, t-1] # random stream or HUC
-          Z[i, t] ~ dbern(mu_Z[i, t])
-        }
-      }
-      
-      # Observation model - need to separate for visits vs. passes
-      for(i in 1:n_sites) {
-        for(t in 1:n_years) {
-          for(j in 1:n_passes) {
-            mu_y[i,j,t] <- Z[i, t] * p[i,t]
-            y[i,j,t] ~ dbern(mu_y[i,j,t])
-          }
-        }
-      }
-      
-      # Derived parameters?
-      mean_psi <- mean(psi1[ ])
-      mean_p <- mean(p[ , ])
-      
-      # for(t in 1:n_years) {
-        # Z_sum[t] <- sum(Z[ , t])
-      # }
-      
-      } # end model
-
-    ", fill=TRUE)
-sink()
-
-params <- c(# "Z",
-  "p",
-  "mu_psi",
-  "sd_psi",
-  "mu_b0",
-  "sd_b0")
-
-out <- jags(data = dfus_data,
-            inits = inits,
-            parameters.to.save = params,
-            model.file = "Code/JAGS/static_occ.txt",
-            n.chains = 3,
-            # n.adapt = 100,
-            n.iter = ni,
-            n.burnin = nb,
-            n.thin = nt, 
-            parallel = TRUE,
-            n.cores = 3)
-
-# Results
-out
