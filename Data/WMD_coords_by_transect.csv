@@ -1,0 +1,37 @@
+stream_name,trans_num,stream,lat,lon
+Alexander Run,1D,Alexander Run_1D,39.65961,-79.22494
+Alexander Run,1U,Alexander Run_1U,39.65988,-79.22573
+Alexander Run,2D,Alexander Run_2D,39.6593,-79.22445
+Alexander Run,2U,Alexander Run_2U,39.66021,-79.22601
+Alexander Run,3D,Alexander Run_3D,39.65908,-79.22392
+Alexander Run,4D,Alexander Run_4D,39.659,-79.22351
+Alexander Run,5D,Alexander Run_5D,39.65895,-79.22297
+Maynardier Ridge at Bear Hill,1D,Maynardier Ridge at Bear Hill_1D,39.60241,-79.20477
+Maynardier Ridge at Bear Hill,1U,Maynardier Ridge at Bear Hill_1U,39.60171,-79.20473
+Maynardier Ridge at Bear Hill,2D,Maynardier Ridge at Bear Hill_2D,39.60273,-79.20496
+Maynardier Ridge at Bear Hill,2U,Maynardier Ridge at Bear Hill_2U,39.601512,-79.20512
+Maynardier Ridge at Bear Hill,3D,Maynardier Ridge at Bear Hill_3D,39.60296,-79.20545
+Maynardier Ridge at Bear Hill,4D,Maynardier Ridge at Bear Hill_4D,39.60334,-79.20573
+Maynardier Ridge at Bear Hill,5D,Maynardier Ridge at Bear Hill_5D,39.60378,-79.20587
+BlueLick,1D,BlueLick_1D,39.64669,-79.06651
+BlueLick,1U,BlueLick_1U,39.64756,-79.06642
+Bowser-Dung Hill,1D,Bowser-Dung Hill_1D,39.63213,-79.24321
+Bowser-Dung Hill,2D,Bowser-Dung Hill_2D,39.63182,-79.24343
+Bowser-Dung Hill,3D,Bowser-Dung Hill_3D,39.63139,-79.24358
+Bowser-Dung Hill,4D,Bowser-Dung Hill_4D,39.631,-79.2435
+Bowser-Dung Hill,5D,Bowser-Dung Hill_5D,39.6307,-79.24386
+ElkLick,1,ElkLick_1,39.60565,-79.09546
+ElkLick,2,ElkLick_2,39.60603,-79.09582
+ElkLick,3,ElkLick_3,39.60633,-79.09582
+ElkLick,4,ElkLick_4,39.60663,-79.09595
+ElkLick,5,ElkLick_5,39.60692,-79.09615
+Koch,1D,Koch_1D,39.58611,-79.21225
+Koch,1U,Koch_1U,39.58582,-79.21112
+Koch,2D,Koch_2D,39.58647,-79.21236
+Koch,2U,Koch_2U,39.58544,-79.21088
+Koch,3D,Koch_3D,39.58671,-79.21273
+Koch,4D,Koch_4D,39.58694,-79.21284
+Koch,5D,Koch_5D,39.58672,-79.21235
+Mill,1,Mill_1,39.55851,79.06377
+PopLick,1,PopLick_1,39.61856,-79.14798
+West Shale North,1D,West Shale North_1D,39.63234,-79.14803
