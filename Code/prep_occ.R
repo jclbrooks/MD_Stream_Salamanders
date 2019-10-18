@@ -2,6 +2,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+# library(fastDummies)
 
 df_occ <- readRDS("Data/Derived/combined_detailed_occ.rds")
 df_covariates <- readRDS(file = "Data/Derived/landscape.rds") # can use this or the one Jacey created
@@ -38,7 +39,7 @@ summary(df_occ_all)
 df_covariates1 <- df_covariates %>%
   filter(zone == "local",
          is.na(riparian_distance_ft)) %>% # decide zone local or upstream
-  select(featureid, zone, AreaSqKM, devel_hi, developed, elevation, forest, impervious, slope_pcnt, impound_area)
+  select(featureid, zone, AreaSqKM, devel_hi, developed, elevation, forest, impervious, slope_pcnt, impound_area, surfcoarse)
 
 # select just daily weather data of interest
 
@@ -51,12 +52,15 @@ df_occ_all <- df_occ_all %>%
   left_join(climate_data_means) %>%
   filter(!is.na(featureid)) %>%
   ungroup() %>%
-  mutate(transect_num = as.integer(as.factor(transect)))
+  mutate(transect_num = as.integer(as.factor(transect))) # %>%
+  # dummy_cols(., select_columns = "region") # don't need region in the model, just use HUCs
   
 summary(df_occ_all) # check for NA and reasonable values
 str(df_occ_all)
 
-############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW - will only work if add western maryland separately or have pass in long format with dates to join in with daily covariates then spread
+############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW - will only work if add western maryland separately or have pass in long format with dates to join in with daily covariates then spread 
+
+#---- potential easy strategy would be to get for non-maryland as a vector with a left join by featureid and date, the replicate that 4 times into a matrix that's the same for each pass. Then create maryland separately and bind_rows. I have all the daily covariates in the tempData object (should rename - used old code)
 
 # get numbers of transects, passes, and years for 3D array
 species <- unique(df_occ_all$species)
@@ -87,6 +91,9 @@ covs <- df_occ_all %>% # probelm with 2018 with no pass 1?
   arrange(desc(region), transect_num)
 
 head(covs) # western maryland at the beginning
+
+# save covariates for occupancy
+saveRDS(covs, "Data/Derived/covs.rds")
 
 # Separate by species and make into 3D array with transect x pass x year
 
@@ -243,6 +250,11 @@ for(t in 1:n_years) {
 
 saveRDS(prub_3d, "Data/Derived/prub_3d.rds")
 
+#---------------cleaning---------------------
 
+rm(list = ls())
+gc()
+
+# unload packages?
 
 
