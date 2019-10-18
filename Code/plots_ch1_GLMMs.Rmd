@@ -2,14 +2,19 @@
 title: "Plots for Chapter 1"
 author: "Jacey Brooks"
 date: "10/11/2019"
-output: pdf_document
+output: word_document
 ---
 
-```{r, setup, include=FALSE}
+```{r setup, include=FALSE}
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+
+#install.packages("extrafont")
+library(extrafont)
+#font_import()
+#loadfonts(device="win")
 
 sal <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
 
@@ -18,6 +23,8 @@ counts <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salam
 counts_long <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Just_Count_Data_by_species_long.csv", stringsAsFactors = FALSE)
 
 substrate <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Location_Transect_Stream_Features_processed.csv", stringsAsFactors = FALSE)
+
+width_depth <- read.csv("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Data/Date_Location_Transect_Visit_Data_Physical_Stream_Features_processed.csv", stringsAsFactors = FALSE)
 
 # Reduce life stage/age into one column for each species
 spec <- sal %>%
@@ -39,22 +46,45 @@ sallies <- sal %>%
          date = mdy(date),
          up_down = ifelse(is.na(up_down), "REF", up_down))
 
+sallies_long <- sallies %>%
+  pivot_longer(cols = c(DFUS, DOCH, DMON, EBIS, GPOR, PRUB), names_to = "species")
+
 # means and sd's
 type <- sallies %>%
   dplyr::select(stream, type, transect, up_down)
 
 sub <- substrate %>%
   select(-Date, - Visit, - Section, -X) %>%
-  mutate(perc_s.c = (S.C/25)*100,
+  group_by(Stream, Transect) %>%
+  summarise_all(max, na.rm = TRUE) %>%
+  mutate(Bankfull = ifelse(Bankfull == (-Inf), NA, Bankfull),
+         S.C = ifelse(S.C == (-Inf), NA, S.C),
+         Sand = ifelse(Sand == (-Inf), NA, Sand),
+         Gravel = ifelse(Gravel == (-Inf), NA, Gravel),
+         Cobble = ifelse(Cobble == (-Inf), NA, Cobble),
+         Boulder = ifelse(Boulder == (-Inf), NA, Boulder),
+         Debris = ifelse(Debris == (-Inf), NA, Debris),
+         perc_s.c = (S.C/25)*100,
          perc_sand = (Sand/25)*100,
          perc_gravel = (Gravel/25)*100,
          perc_cobble = (Cobble/25)*100,
          perc_boulder = (Boulder/25)*100,
          perc_debris = (Debris/25)*100) %>%
-  select(-S.C, -Sand, -Gravel, -Cobble, -Boulder, -Debris) %>%
-  group_by(Stream, Transect) %>%
-  summarise_all(mean, na.rm = FALSE)
+  select(-S.C, -Sand, -Gravel, -Cobble, -Boulder, -Debris)
 colnames(sub) <- c("stream", "transect", "bankfull", "silt_clay", "sand", "gravel", "cobble", "boulder", "debris")
+
+wd <- width_depth %>%
+  select(-Section, -X, - Visit) %>%
+  group_by(Date, Stream, Transect) %>%
+  summarise_all(mean, na.rm = FALSE) %>%
+  ungroup() %>%
+  mutate(Date = ymd(Date))
+wd <- wd[-1,]
+colnames(wd) <- c("date", "stream", "transect", "mean_wetted_width", "mean_depth")
+
+sallies_all <- sallies %>%
+  left_join(wd) %>%
+  left_join(sub)
 
 sal_means <- sallies %>%
   group_by(stream, transect) %>%
@@ -71,96 +101,223 @@ sal_means <- sallies %>%
 
 ```
 
-## Overview
+# Overview
 
-This is a general overview of the surveys/counts.
+## USE THIS ONE (OR THE BAR GRAPH)
+This is a general overview of the surveys/counts. I like this one but may change it to a bar graph of total counts because the means for all of them are 0 (or around there).
 
-```{r, overview, echo=FALSE}
+```{r overview, echo = FALSE, message=FALSE, warning=FALSE}
 # Graph of average count per transect by species
 ggplot(stack(counts_long), aes(x=ind, y=values)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Species") + ylab("Individuals/Transect")
-# ggplot(sal_means, aes(x = reorder(type, GPORL, FUN = mean), GPORL)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_bw()
 
+# ggplot(stack(counts_long), aes(x = ind, y = values)) + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), fill = "lightblue") + theme_classic()
+
+ggplot(stack(counts_long), aes(x = ind, y = values)) + 
+  geom_bar(data = NULL, stat= "identity", fill = "lightblue")  + 
+  theme(axis.text.x = element_text(size = 9),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 15, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) +
+  ylab("Total Counts") +
+  xlab("Species")
 
 ```
 
-## GLMM Results
+## USE THIS ONE
 
+```{r species by stream, echo = FALSE, message=FALSE, warning=FALSE}
+sallies_long$stream <- factor(sallies_long$stream,levels = c("ALEX", "BEARHILL", "DUNGHILL", "KOCH", "WSHALEN", "BLUELICK", "ELKLICK", "MILL", "POPLICKTRIB"))
+
+ggplot(sallies_long, aes(x = type, y = value)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Type") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+
+
+# GLMM Results
+
+## USE THIS ONE
 ### Statistically significant results
 
-This was the only statistically significant covariate in all of the models that I ran. This pattern is really neat and shows that all of the DMON individuals 
+This was the only statistically significant covariate in all of the models that I ran. This pattern is really neat and shows that all of the DMON individuals were found in waters that had a pH of at least ~6.5.
+```{r, dmon-pH, echo = FALSE, message=FALSE, warning=FALSE}
+# dmon_glmm <- readRDS("C:/Users/Jacey/Documents/FSU/Research/R_code/MD_Stream_salamanders/Results/dmon_glmm_results.rds")
+# 
+# predicted_df <- data.frame(dmon_pred = exp(predict(dmon_glmm, sal_all, re.form = NA)), mean_wetted_width = sallies$mean_wetted_width, cobble = sallies$cobble)
+# 
+# ggplot(sallies_all, aes(pH, DMON)) + geom_point() + geom_line(aes(x=pH, y=dmon_pred), data = predicted_df) + theme_classic()
 
-```{r, dmon-pH, include = TRUE, results = "hide"}
-ggplot(sallies, aes(pH, DMON)) + geom_point() + geom_smooth(method = "glm")
+ggplot(sallies_all, aes(x = mean_wetted_width + cobble, DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x)) + theme_classic()
+
+ggplot(sallies_all, aes(x = mean_wetted_width , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + 
+  xlab("Mean Wetted Width (m)") + ylab("DMON Counts") + xlim(0,6) + ylim(-1,12)
+
+ggplot(sallies_all, aes(x = cobble , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + 
+  xlab("Percent Cobble") + ylab("DMON Counts") + xlim(0,100) + ylim(-1,12)
+
 ```
 
-## Other metrics not included in the GLMMs
+# Other metrics not included in the GLMMs
 
-```{r, sallies - percent silt/clay, include = TRUE, results = "hide"}
-ggplot(sal_means, aes(silt_clay, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Silt/Clay") + ylab("Average number of individuals caught per plot")
+```{r, sallies - percent silt/clay, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sallies_all, aes(x = pH , EBIS)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + 
+  xlab("pH") + ylab("EBIS Counts") + xlim(4,9) + ylim(-1,12)
 ```
 
 
+## USE THIS ONE
+```{r, sallies - percent sand, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sallies_all, aes(x = cobble , GPOR)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + 
+  xlab("Percent Cobble") + ylab("GPOR Counts") + xlim(0,100) + ylim(-1,8)
+```
+ 
+ 
 
-```{r, sallies - percent sand, include = TRUE, results = "hide"}
-ggplot(sal_means, aes(sand, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Sand") + ylab("Average number of individuals caught per plot")
+## USE THIS ONE
+```{r, sallies - percent cobble, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sal_means, aes(cobble, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Cobble") + ylab("Average Number of Individuals/Transect") + xlim(0,100) + ylim(-1,12)
 ```
 
-
-```{r, sallies - percent cobble, include = TRUE, results = "hide"}
-ggplot(sal_means, aes(cobble, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Percent Cobble") + ylab("Average number of individuals caught per plot")
+```{r, sallies - bankfull, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sal_means, aes(bankfull, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Bankfull Width (cm)") + ylab("Average Number of Individuals/Transect")
 ```
 
-```{r, sallies - bankfull, include = TRUE, results = "hide"}
-ggplot(sal_means, aes(bankfull, total)) + geom_point() + geom_smooth(method = "lm") + theme_classic() + xlab("Bankfull Width (cm)") + ylab("Average number of individuals caught per plot")
-```
+# Characterizing the stream
 
-## Characterizing the stream
-
-```{r, DO, include = TRUE, results = "hide", include = TRUE, results = "hide"}
+This graph is not working and dissolved oxygen not worth mentioning anyways...
+```{r, DO, echo = FALSE, message=FALSE, warning=FALSE}
 dox <- sal_means %>%
   select(stream, DO) %>%
   distinct() 
   
 ggplot(dox, aes(x= stream, y = DO)) + theme_classic() + xlab("Stream") + ylab("Dissolved Oxygen (ppm)")
 ```
-Dissolved oxygen not worth mentioning...
 
+## USE THIS ONE
+Shows that the limestone sand dumps are working to some extent on pH.
+```{r, pH, echo = FALSE, message=FALSE, warning=FALSE}
+sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
 
-```{r, pH, include = TRUE, results = "hide"}
-ggplot(sallies, aes(x = reorder(up_down, pH, FUN = median), pH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+ggplot(sallies, aes(x = up_down, y = pH)) + geom_boxplot(fill = "lightblue") + xlab("Section of Stream") + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15, color = "black"),
+        axis.text.y = element_text(size = 15, color = "black"),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference"))
+```
+
+## USE THIS ONE
+Shows that EC is still not great downstream...
+```{r, EC, echo = FALSE, message=FALSE, warning=FALSE}
+sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
+
+ggplot(sallies, aes(x = up_down, y = EC)) + geom_boxplot(fill = "lightblue") + xlab("Section of Stream") + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15, color = "black"),
+        axis.text.y = element_text(size = 15, color = "black"),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference")) + ylab("Electrical Conductivity (μS)")
+
 ```
 
 
-```{r, EC, include = TRUE, results = "hide"}
-ggplot(sallies, aes(x = reorder(up_down, EC, FUN = median), EC)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
-
+Not really sure about this one?? The graph isn't working anyways... Don't know why...
+```{r, silt_clay boxplot, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sal_means, aes(x = reorder(stream, cobble, FUN = median), cobble)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 
 
-```{r, DFUS, include = TRUE, results = "hide"}
+# salamander counts vs up_down
+
+## USE THIS ONE
+This one is all of the graphs below but in one graph. I like it but may change it to a bar graph with standard deviations...
+```{r species counts by stream}
+sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
+
+ggplot(sallies_long, aes(x = up_down, y = value)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 15, color = "black"),axis.text.x = element_text(size = 15, angle = 45, hjust = 1, color = "black"),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference"))
+```
+
+```{r, DFUS, echo = FALSE, message=FALSE, warning=FALSE}
 par(mfrow = c(2:3))
 ggplot(sallies, aes(x = reorder(up_down, DFUS, FUN = median), DFUS)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
-
 ```
 
 
-```{r, DMON, include = TRUE, results = "hide"}
+```{r, DMON, echo = FALSE, message=FALSE, warning=FALSE}
 ggplot(sallies, aes(x = reorder(up_down, DMON, FUN = median), DMON)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 
-```{r, DOCH, include = TRUE, results = "hide"}
+```{r, DOCH, echo = FALSE, message=FALSE, warning=FALSE}
 ggplot(sallies, aes(x = reorder(up_down, DOCH, FUN = median), DOCH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 
-```{r, EBIS, include = TRUE, results = "hide"}
-ggplot(sallies, aes(x = reorder(up_down, DOCH, FUN = median), DOCH)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
+```{r, EBIS, echo = FALSE, message=FALSE, warning=FALSE}
+ggplot(sallies, aes(x = reorder(up_down, EBIS, FUN = median), EBIS)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 
-```{r, GPOR, include = TRUE, results = "hide"}
+```{r, GPOR, echo = FALSE, message=FALSE, warning=FALSE}
 ggplot(sallies, aes(x = reorder(up_down, GPOR, FUN = median), GPOR)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 
-```{r, PRUB, include = TRUE, results = "hide"}
+```{r, PRUB, echo = FALSE, message=FALSE, warning=FALSE}
 ggplot(sallies, aes(x = reorder(up_down, PRUB, FUN = median), PRUB)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Section of Stream") 
 ```
 

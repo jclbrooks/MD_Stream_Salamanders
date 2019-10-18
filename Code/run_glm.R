@@ -156,7 +156,7 @@ qqnorm(residuals(dmon[[2]]))
 boxplot(residuals(dmon[[2]]))
 hist(residuals(dmon[[2]]))
 
-saveRDS(dmon[[2]], "Results/dmon_glmm_results.rds")
+
 ### pH is statistically significant, the residuals look okay
 ###--- PLOT ---###
 
@@ -239,10 +239,10 @@ model_names = c("water", "pH + EC", "mean_wetted_width + cobble")
 aictab(cand.set = dfus, modnames = model_names)
 
 summary(dfus[[3]])
-plot(dfus[[2]])
-qqnorm(residuals(dfus[[2]]))
-boxplot(residuals(dfus[[2]]))
-hist(residuals(dfus[[2]]))
+plot(dfus[[3]])
+qqnorm(residuals(dfus[[3]]))
+boxplot(residuals(dfus[[3]]))
+hist(residuals(dfus[[3]]))
 # none of the variables are significant, residuals aren't great
 
   
@@ -260,11 +260,11 @@ aictab(cand.set = dmon, modnames = model_names)
 
 summary(dmon[[3]])
 plot(dmon[[3]])
-qqnorm(residuals(dmon[[2]]))
-boxplot(residuals(dmon[[2]]))
-hist(residuals(dmon[[2]]))
+qqnorm(residuals(dmon[[3]]))
+boxplot(residuals(dmon[[3]]))
+hist(residuals(dmon[[3]]))
 
-saveRDS(dmon[[2]], "Results/dmon_glmm_results.rds")
+saveRDS(dmon[[3]], "Results/dmon_glmm_results.rds")
 ### pH is statistically significant, the residuals look okay
 ###--- PLOT ---###
 
@@ -300,7 +300,8 @@ plot(ebis[[2]])
 qqnorm(residuals(ebis[[2]]))
 boxplot(residuals(ebis[[2]]))
 hist(residuals(ebis[[2]]))
-### nothing is significant, residuals look GREAT
+
+saveRDS(ebis[[2]], "Results/ebis_glmm_results.rds")
 
 # GPOR
 gpor = list()
@@ -316,10 +317,11 @@ aictab(cand.set = gpor, modnames = model_names)
 
 summary(gpor[[3]])
 plot(gpor[[3]])
-qqnorm(residuals(gpor[[2]]))
-boxplot(residuals(gpor[[2]]))
-hist(residuals(gpor[[2]]))
-# none are significant, residuals are okay
+qqnorm(residuals(gpor[[3]]))
+boxplot(residuals(gpor[[3]]))
+hist(residuals(gpor[[3]]))
+
+saveRDS(gpor[[3]], "Results/gpor_glmm_results.rds")
 
 # PRUB
 prub = list()
