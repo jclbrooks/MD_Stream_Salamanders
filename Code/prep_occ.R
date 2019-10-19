@@ -9,7 +9,7 @@ df_covariates <- readRDS(file = "Data/Derived/landscape.rds") # can use this or 
 df_hucs <- readRDS(file = "Data/Derived/hucs.rds") # can just left_join into covariate data
 tempData <- readRDS(file = "Data/Derived/daymet_daily.rds") # daily covariates are going to need to be prepped and spread - do in separate script
 climate_data_means <- readRDS(file = "Data/Derived/daymet_means.rds") # annual means by
-featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv")
+featureids_matched <- read_csv("featureids_for_DAYMET_data.csv")
 
 
 str(df_occ)
@@ -61,6 +61,25 @@ str(df_occ_all)
 ############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW - will only work if add western maryland separately or have pass in long format with dates to join in with daily covariates then spread 
 
 #---- potential easy strategy would be to get for non-maryland as a vector with a left join by featureid and date, the replicate that 4 times into a matrix that's the same for each pass. Then create maryland separately and bind_rows. I have all the daily covariates in the tempData object (should rename - used old code)
+
+non_wmd <- df_occ %>%
+  select(-date) %>%
+  left_join(featureids_matched, by = c("transect", "region")) %>%
+  select(date, region, transect, featureid) %>%
+  distinct() %>%
+  filter(!region == "WMaryland") %>%
+  left_join(tempData) 
+
+
+
+wmd<- df_occ %>%
+  select(-date) %>%
+  left_join(featureids_matched, by = c("transect", "region")) %>%
+  select(date, region, transect, featureid) %>%
+  distinct() %>%
+  filter(region == "WMaryland")
+
+
 
 # get numbers of transects, passes, and years for 3D array
 species <- unique(df_occ_all$species)
