@@ -77,8 +77,8 @@ colnames(shenandoah) <- c("date", "transect")
   
 
 
-wmaryland <- wmaryland %>%
-  select(date, stream) %>%
+wmaryland1 <- wmaryland %>%
+  select(date, stream, transect) %>%
   mutate(date = mdy(date),
          stream = ifelse(stream == "POPLICKTRIB", "PopLick", stream),
          stream = ifelse(stream == "ALEX", "Alexander Run", stream),
@@ -89,9 +89,22 @@ wmaryland <- wmaryland %>%
          stream = ifelse(stream == "KOCH", "Koch", stream),
          stream = ifelse(stream == "DUNGHILL", "Bowser-Dung Hill", stream),
          stream = ifelse(stream == "BEARHILL", "Maynardier Ridge at Bear Hill", stream)) %>%
-  distinct()
+  distinct() %>%
+  mutate(stream_trans = paste0(stream, "_", transect)) %>%
+  select(date, stream_trans)
 
-colnames(wmaryland) <- c("date", "transect")
+colnames(wmaryland1) <- c("date", "transect")
+
+str(canaan)
+str(capital)
+str(shenandoah)
+str(wmaryland1)
+
+# as.character(canaan$date)
+# as.character(capital$date)
+# as.character(shenandoah$date)
+# as.character(wmaryland1$date)
+
 
 trans <- bind_rows(canaan, capital, shenandoah, wmaryland)
 
@@ -107,4 +120,5 @@ transects <- trans %>%
 str(transects)
 summary(transects)
 
-# write.csv(x = transects, file = "featureids_for_DAYMET_data.csv")
+#write.csv(x = transects, file = "featureids_for_DAYMET_data.csv", row.names = FALSE)
+
