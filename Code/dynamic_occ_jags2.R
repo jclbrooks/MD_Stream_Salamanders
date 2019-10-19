@@ -14,9 +14,9 @@ if(testing) {
   nc = 1
 } else {
   na = 1000
-  nb = 10000
-  ni = 40000
-  nt = 4
+  nb = 12000
+  ni = 72000
+  nt = 3
   nc = 3
 }
 
@@ -45,38 +45,40 @@ cat("
       
       # Priors    
       
-      # mu_psi ~ dnorm(0, pow(2, -2))
-      # sd_psi ~ dt(0, pow(1.5,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
+      # mu_psi ~ dnorm(0, pow(1.5, -2))
+      # sd_psi ~ dt(0, pow(2,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
       
-      # mu_p ~ dnorm(0, pow(2, -2))
-      # sd_p ~ dt(0, pow(1.5,-2), 1)T(0, )
+      # mu_p ~ dnorm(0, pow(1.5, -2))
+      # sd_p ~ dt(0, pow(2,-2), 1)T(0, )
       
       #for(i in 1:n_huc12) {
       #  b0_psi[i] ~ dnorm(mu_psi, sd_psi)
       # }
       
       
-      a0_p ~ dnorm(0, pow(2, -2)) # fixed intercept
-      a1 ~ dnorm(-1, pow(2, -2))  # behavioral effect for reduced detect with removal
+      a0_p ~ dnorm(0, pow(1.5, -2)) # fixed intercept
+      a1 ~ dnorm(-1, pow(1.5, -2))  # behavioral effect for reduced detect with removal
+      
+      
       for(i in 1:n_sites) {
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp
+          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
           }
         }
       } 
       
-      mu_b0 ~ dnorm(0, pow(2, -2))
-      b1 ~ dnorm(0, pow(2, -2))
-      b2 ~ dnorm(0, pow(2, -2))
-      b3 ~ dnorm(0, pow(2, -2))
-      b4 ~ dnorm(0, pow(2, -2))
-      b5 ~ dnorm(0, pow(2, -2))
-      mu_b6 ~ dnorm(0, pow(2, -2))
+      mu_b0 ~ dnorm(0, pow(1.5, -2))
+      b1 ~ dnorm(0, pow(1.5, -2))
+      b2 ~ dnorm(0, pow(1.5, -2))
+      b3 ~ dnorm(0, pow(1.5, -2))
+      b4 ~ dnorm(0, pow(1.5, -2))
+      b5 ~ dnorm(0, pow(1.5, -2))
+      mu_b6 ~ dnorm(0, pow(1.5, -2))
       
-      sd_b0 ~ dt(0, pow(1.5,-2), 1)T(0, )
-      sd_b6 ~ dt(0, pow(1.5,-2), 1)T(0, )
+      sd_b0 ~ dt(0, pow(2,-2), 1)T(0, )
+      sd_b6 ~ dt(0, pow(1,-2), 1)T(0, )
       
       for(h in 1:n_huc12) {
         b0[h] ~ dnorm(mu_b0, sd_b0)
@@ -89,7 +91,7 @@ cat("
         Z[i, 1] ~ dbern(psi[i, 1])
         
         for(t in 2:n_years) {
-          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b5 * area[i] + b6[huc[i]] * Z[i, t-1]
+          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior
           Z[i, t] ~ dbern(psi[i, t])
         }
       }
@@ -112,11 +114,13 @@ cat("
       Z_sum[t] <- sum(Z[ , t])
       }
       
-      # for(i in 1:n_sites) {
+      # for(i in 1:n_sites) { 
         for(t in 2:n_years) {
           turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
         }
       # }
+      
+      # calculate average turnover rates per region across years?
       
       } # end model
 
@@ -132,7 +136,7 @@ dfus_data <- list(y = dfus_3d,
                   n_passes = dim(dfus_3d)[2],
                   n_years = dim(dfus_3d)[3],
                   n_huc12 = 25,
-                  huc = as.integer(as.factor(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc10)),
                   forest = as.numeric(scale(covs$forest)),
                   slope = as.numeric(scale(covs$slope_pcnt)),
                   air_mean = as.numeric(scale(covs$air_mean)),

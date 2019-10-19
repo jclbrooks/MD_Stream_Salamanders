@@ -156,5 +156,11 @@ summary(transects)
 # all_transects <- bind_rows(transects, wmd_transects) %>%
 #   filter(!is.na(region))
 
-write.csv(x = transects, file = "featureids_for_DAYMET_data.csv", row.names = FALSE)
+write.csv(x = transects, file = "Data/featureids_for_DAYMET_data.csv", row.names = FALSE)
 
+#---------------cleaning---------------------
+
+rm(list = ls())
+gc()
+
+# unload packages?

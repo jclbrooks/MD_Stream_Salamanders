@@ -125,9 +125,18 @@ str(daymet_df)
 
 library(daymetr)
 
-wmd_coords <- read_csv("Data/all_sites_coords.csv")
+wmd_coords <- read_csv("Data/all_sites_coords.csv") %>%
+  select(transect = site, latitude = lat, longitude = lon)
 
-wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/all_sites_coords.csv', # maybe do for all locations to get 2018
+unique_coords <- wmd_coords %>%
+  select(latitude, longitude) %>%
+  distinct() %>%
+  mutate(site = row_number()) %>%
+  select(site, latitude, longitude)
+
+write_csv(unique_coords, "Data/unique_site_coords.csv")
+
+wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/unique_site_coords.csv', # maybe do for all locations to get 2018
                       start = 2018,
                       end = 2018,
                       internal = TRUE,
@@ -148,18 +157,23 @@ wmd_daymet_batch <- download_daymet_batch(file_location = 'Data/all_sites_coords
 str(wmd_daymet_batch)
 summary(wmd_daymet_batch)
 
+wmd_daymet_batch <- wmd_coords %>%
+  full_join(wmd_daymet_batch)
+
+summary(wmd_daymet_batch)
+
 featureids_matched <- read_csv("Data/featureids_for_DAYMET_data.csv") %>%
   select(transect, featureid) %>%
   distinct()
 
 wmd_daymet <- wmd_daymet_batch %>%
-  select(site, year, yday, measurement, value) %>%
+  select(transect, year, yday, measurement, value) %>%
   distinct() %>%
-  group_by(site, year, yday) %>%
+  group_by(transect, year, yday) %>%
   # mutate(Value = value) %>%
   # filter(!is.na(value)) %>%
   pivot_wider(names_from = measurement, values_from = value, values_fn = list(value = mean)) %>%
-  select(transect = site, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
+  select(transect, year, yday, prcp = prcp..mm.day., swe = swe..kg.m.2., tmax = tmax..deg.c., tmin = tmin..deg.c.) %>%
   mutate(airTemp = (tmax + tmin) / 2,
          date = as.Date(yday-1, origin = paste0(year, "-01-01"))) %>%
   select(-yday) %>%
@@ -170,6 +184,9 @@ wmd_daymet <- wmd_daymet_batch %>%
 # 
 # wmd_daymet
 # summary(wmd_daymet)
+
+# filter(wmd_daymet, is.na(featureid))
+
 
 #-------------------- Restructure and combine data----------------
 
