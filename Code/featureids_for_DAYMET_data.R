@@ -112,12 +112,18 @@ str(wmaryland1)
 # as.character(shenandoah$date)
 # as.character(wmaryland1$date)
 
+str(canaan)
+str(capital1)
+str(shenandoah)
+str(wmaryland)
 
-#trans <- bind_rows(canaan, capital1, shenandoah, wmaryland)
-trans <- rbind(canaan, capital1, shenandoah)
+library(lubridate)
 
-str(trans)
-summary(trans)
+# convert US MS Excel date format into standard date format and make transect the unique experimental unit identifier **looks like this gets done below**
+wmaryland_small <- wmaryland %>%
+  mutate(date = mdy(date),
+         transect = paste0(stream, "_", transect)) %>% # not sure if this will cause problems with other scripts but need a unique identifier
+  select(date, transect)
 
 str(landscape_characteristics)
 summary(landscape_characteristics)
@@ -129,15 +135,26 @@ wmd_transects <- wmaryland1 %>%
          region = "WMaryland") %>%
   select(-transect_num) %>%
   distinct()
+
+wmd_transects_small <- wmd_transects %>%
+  select(date)
+
+trans <- bind_rows(canaan, capital1, shenandoah)
+# trans <- rbind(canaan, capital1, shenandoah)
+
+str(trans)
+summary(trans)
   
 transects <- trans %>%
-  left_join(landscape_characteristics)
+  left_join(landscape_characteristics) %>%
+  bind_rows(. , wmd_transects) %>%
+  filter(!is.na(region))
 
 str(transects)
 summary(transects)
 
-all_transects <- bind_rows(transects, wmd_transects) %>%
-  filter(!is.na(region))
+# all_transects <- bind_rows(transects, wmd_transects) %>%
+#   filter(!is.na(region))
 
-#write.csv(x = all_transects, file = "featureids_for_DAYMET_data.csv", row.names = FALSE)
+write.csv(x = transects, file = "featureids_for_DAYMET_data.csv", row.names = FALSE)
 
