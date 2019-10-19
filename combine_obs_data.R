@@ -287,7 +287,7 @@ just_pass <- max_pass %>%
 length(unique(paste(she$Site, she$Date))) * length(unique(she$Species)) * length(unique(she$Age)) * length(unique(she$Pass))
 
 combos_she <- she %>%
-  expand(nesting(Site, Date), Age, Species, Pass) %>%
+  tidyr::expand(nesting(Site, Date), Age, Species, Pass) %>%
   left_join(just_pass) 
 
 she2 <- combos_she %>%
@@ -387,7 +387,7 @@ length(unique(df$trans)) * length(unique(df$species)) * length(unique(df$stage))
 combos_df <- df %>%
   ungroup() %>%
   select(date, trans, visit, species, stage, obs) %>%
-  expand(nesting(trans), stage, species, visit) %>%
+  tidyr::expand(nesting(trans), stage, species, visit) %>%
   left_join(just_visit) %>%
   select(trans, species, stage, visit, max_visit) %>%
   arrange(trans, species, stage, visit)
@@ -452,12 +452,15 @@ landscape_occ <- landscape_N %>%
          transect = ifelse(region == "Capital", gsub(pattern = "_v.$", replacement = "", x = transect), transect),
          transect = ifelse(region == "Capital", gsub(pattern = "_vNULL", replacement = "", x = transect), transect),
          stream = transect) %>%
-  separate(col = "transect", into = c("transect", "transect_num"), sep = "_")
+  separate(col = "transect", into = c("transect", "transect_num"), sep = "_") %>%
+  select(region, stream, date, species, age, pass1, pass2, pass3, pass4, pass5, canaan, capital, shenandoah, wmaryland)
 ## WARNING: HARMLESS - just says that there are a lot of NAs filled into the stream column because it is conditional on the region = "wmaryland"
 
+colnames(landscape_occ) <- c("region", "transect", "date", "species", "age", "pass1", "pass2", "pass3", "pass4", "pass5", "canaan", "capital", "shenandoah", "wmaryland")
+
 # Remove "PR" transect from landscape_occ (wasn't working in line 441)
-landscape_occ_pr <- landscape_occ[-which(landscape_occ$transect == "PR"),]
-landscape_occ <- landscape_occ_pr
+# landscape_occ_pr <- landscape_occ[-which(landscape_occ$transect == "PR"),]
+# landscape_occ <- landscape_occ_pr
 
 summary(landscape_occ)
 unique(landscape_occ$age)
