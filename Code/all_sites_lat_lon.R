@@ -1,5 +1,6 @@
 #### creating a file with all lat/lon for all of landscape occ model sites
-
+library(dplyr)
+library(tidyr)
 
 can <- read.csv("Data/Landscape/CVNWR_locations_intersected.csv", header = T, stringsAsFactors = F)
 she <- read.csv("Data/Landscape/Shenandoah_locations_intersected.csv", header = T, stringsAsFactors = F)
