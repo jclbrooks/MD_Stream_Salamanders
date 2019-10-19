@@ -62,22 +62,48 @@ str(df_occ_all)
 
 #---- potential easy strategy would be to get for non-maryland as a vector with a left join by featureid and date, the replicate that 4 times into a matrix that's the same for each pass. Then create maryland separately and bind_rows. I have all the daily covariates in the tempData object (should rename - used old code)
 
+# needed matching gransect numbers for ordering later
+trans_num <- df_occ_all %>%
+  select(region, transect, transect_num)
+
+# non-Western Maryland sites daily covariates
 non_wmd <- df_occ %>%
   select(-date) %>%
   left_join(featureids_matched, by = c("transect", "region")) %>%
   select(date, region, transect, featureid) %>%
   distinct() %>%
   filter(!region == "WMaryland") %>%
-  left_join(tempData) 
+  left_join(tempData) %>%
+  left_join(trans_num) %>%
+  distinct() %>%
+  select(transect_num, tmax, tmin, prcp, dayl, srad, vp, swe, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov
 
+summary(non_wmd) 
 
+non_wmd_3d <- array(non_wmd, c(dim(non_wmd), 4)) #don't think this is working, size of array looks fine but numbers are not...
 
-wmd<- df_occ %>%
+# Western Maryand sites daily covariates
+wmd <- df_occ %>%
   select(-date) %>%
   left_join(featureids_matched, by = c("transect", "region")) %>%
   select(date, region, transect, featureid) %>%
   distinct() %>%
-  filter(region == "WMaryland")
+  filter(region == "WMaryland") %>%
+  left_join(tempData) %>%
+  left_join(trans_num) %>%
+  distinct() %>%
+  select(date, transect_num, tmax, tmin, prcp, dayl, srad, vp, swe, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov
+
+summary(wmd) 
+
+# example code
+# dfus_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+# for(t in 1:n_years) {
+#     dfus_3d[ , , t] <- dfus %>% 
+#       filter(year == year[t]) %>%
+#       dplyr::select(starts_with("pass")) %>%
+#       as.matrix()
+# }
 
 
 
