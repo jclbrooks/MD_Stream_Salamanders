@@ -60,7 +60,16 @@ cat("
       a1 ~ dnorm(-1, pow(1.5, -2))  # behavioral effect for reduced detect with removal
       
       
-      for(i in 1:n_sites) {
+      for(i in 1:36) { # first 36 records are in western maryland
+        # a0_p[i] ~ dnorm(mu_p, sd_p)
+        for(t in 1:n_years) {
+          for(j in 1:n_passes) {
+          logit(p[i,j,t]) <- a0_p # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+          }
+        }
+      } 
+      
+            for(i in 37:n_sites) {
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {

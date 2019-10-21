@@ -76,11 +76,16 @@ non_wmd <- df_occ %>%
   left_join(tempData) %>%
   left_join(trans_num) %>%
   distinct() %>%
-  select(transect_num, tmax, tmin, prcp, dayl, srad, vp, swe, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov
+  select(date, transect, region, transect_num, tmax, tmin, prcp, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) %>%
+  mutate(year = year(date)) %>%
+  arrange(transect_num, date) %>%
+  ungroup() # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov - yes they are
 
 summary(non_wmd) 
 
-non_wmd_3d <- array(non_wmd, c(dim(non_wmd), 4)) #don't think this is working, size of array looks fine but numbers are not...
+# Need to expand to all years, standardize, and fill NA with 0
+
+# non_wmd_3d <- array(non_wmd, c(dim(non_wmd), 4)) #don't think this is working, size of array looks fine but numbers are not...
 
 # Western Maryand sites daily covariates
 wmd <- df_occ %>%
@@ -92,9 +97,28 @@ wmd <- df_occ %>%
   left_join(tempData) %>%
   left_join(trans_num) %>%
   distinct() %>%
-  select(date, transect_num, tmax, tmin, prcp, dayl, srad, vp, swe, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov
+  select(date, transect, region, transect_num, tmax, tmin, prcp, airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30) %>%
+  mutate(year = year(date)) %>%
+  arrange(transect_num, date) %>%
+  ungroup() # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov - yes
 
 summary(wmd) 
+
+# need visit (name pass) to spread by
+wmd$pass <- NA_integer_
+wmd[1, "pass"] <- 1
+
+for(i in 2:nrow(wmd)) {
+  wmd$pass[i] <- ifelse(wmd$transect[i] == wmd$transect[i-1], wmd$pass[i-1] + 1, 1)
+}
+
+prcp2_wmd <- wmd %>%
+  group_by(region, transect, transect_num, year) %>%
+  select(region, transect, transect_num, year, pass, prcp2) %>%
+  pivot_wider(names_from = pass, values_from = prcp2, names_prefix = "pass")
+# Need to handle other years!!!!!!
+# Need to combine with non-wmd data, expand to all years, standardize, and fill NA with 0 
+
 
 # example code
 # dfus_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
