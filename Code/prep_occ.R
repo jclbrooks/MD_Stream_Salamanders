@@ -30,13 +30,13 @@ transect_stream <- read_csv("Data/Location_Transect_Stream_Features_processed.cs
 
 # filter out sites with NA because of bad lat lon; also done below (line 84) for df_occ_all and spp_dist 
 featureids_matched <- featureids_matched %>%
-  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "West Shale North_1D"))
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3",  "COST21-3", "West Shale North_1D"))
 
 df_occ <- df_occ %>%
-  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "West Shale North_1D"))
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "COST21-3", "West Shale North_1D"))
 
 # fix the stream vs. transect naming issues to be consistent and work with other data
-spp_dist <- featureids_matched %>% # may need to remove transect = West Shale North_1D" but should be fixed below so maybe not necessary
+spp_dist <- featureids_matched %>%
   select(-date) %>%
   distinct() %>%
   left_join(transect_stream) %>%
