@@ -28,8 +28,15 @@ transect_stream <- read_csv("Data/Location_Transect_Stream_Features_processed.cs
          stream = ifelse(stream == "BEARHILL", "Maynardier Ridge at Bear Hill", stream)) %>%
   mutate(transect = paste0(stream, "_", Transect))
 
+# filter out sites with NA because of bad lat lon; also done below (line 84) for df_occ_all and spp_dist 
+featureids_matched <- featureids_matched %>%
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "West Shale North_1D"))
+
+df_occ <- df_occ %>%
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "West Shale North_1D"))
+
 # fix the stream vs. transect naming issues to be consistent and work with other data
-spp_dist <- featureids_matched %>%
+spp_dist <- featureids_matched %>% # may need to remove transect = West Shale North_1D" but should be fixed below so maybe not necessary
   select(-date) %>%
   distinct() %>%
   left_join(transect_stream) %>%
@@ -55,7 +62,7 @@ df_occ1 <- df_occ %>%
   mutate(year = if_else(region == "WMaryland", 2018, year)) %>%
   dplyr::select(transect, region, year, species, pass1, pass2, pass3, pass4) %>% # maybe include other variables as covariates
   group_by(transect, region, year, species) %>%
-  summarise_all(max)
+  summarise_all(max) 
 
 summary(df_occ1)
 
@@ -78,6 +85,11 @@ df_covariates1 <- df_covariates %>%
 # select just daily weather data of interest
 
 # filter out sites with NA because of bad lat lon
+spp_dist <- spp_dist %>%
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST21-3", "COST8-3", "West Shale North_1D")) 
+
+
+
 
 # combine data and sort by region (make western MD the first or the last for ease of looping through differently)
 df_occ_all <- df_occ_all %>%
