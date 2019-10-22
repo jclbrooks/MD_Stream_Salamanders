@@ -100,11 +100,11 @@ cat("
       # Process model
       for(i in 1:n_sites) { # sites or transects or streams?
         logit(psi[i, 1]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] # multiple the whole thing by vector of species range
-        Z[i, 1] ~ dbern(psi[i, 1])
+        Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
         
         for(t in 2:n_years) {
           logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead
-          Z[i, t] ~ dbern(psi[i, t])
+          Z[i, t] ~ dbern(psi[i, t] * zeta[i])
         }
       }
       
@@ -154,7 +154,8 @@ dfus_data <- list(y = dfus_3d,
                   air_mean = as.numeric(scale(covs$air_mean)),
                   precip = as.numeric(scale(covs$prcp_mo_mean)),
                   area = as.numeric(scale(covs$AreaSqKM)),
-                  prcp7 = as.matrix(prcp7_std))
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$DFUS)) # range of the species 
                   
 # Good starting values for occupancy = max over passes
 dfus_init <- apply(dfus_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below

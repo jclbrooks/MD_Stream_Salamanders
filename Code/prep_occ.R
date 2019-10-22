@@ -10,6 +10,40 @@ df_hucs <- readRDS(file = "Data/Derived/hucs.rds") # can just left_join into cov
 tempData <- readRDS(file = "Data/Derived/daymet_daily.rds") # daily covariates are going to need to be prepped and spread - do in separate script
 climate_data_means <- readRDS(file = "Data/Derived/daymet_means.rds") # annual means by
 featureids_matched <- read_csv("featureids_for_DAYMET_data.csv")
+spp_dist <- read_csv("Data/species_ranges.csv") %>%
+  rename(stream = transect) # transect mislabled as stream for western maryland
+
+# fix the naming inconsistencies
+transect_stream <- read_csv("Data/Location_Transect_Stream_Features_processed.csv") %>%
+  select(stream = Stream, Transect) %>%
+  distinct() %>%
+  mutate(stream = ifelse(stream == "POPLICKTRIB", "PopLick", stream),
+         stream = ifelse(stream == "ALEX", "Alexander Run", stream),
+         stream = ifelse(stream == "ELKLICK", "ElkLick", stream),
+         stream = ifelse(stream == "MILL", "Mill", stream),
+         stream = ifelse(stream == "BLUELICK", "BlueLick", stream),
+         stream = ifelse(stream == "WSHALEN", "West Shale North", stream),
+         stream = ifelse(stream == "KOCH", "Koch", stream),
+         stream = ifelse(stream == "DUNGHILL", "Bowser-Dung Hill", stream),
+         stream = ifelse(stream == "BEARHILL", "Maynardier Ridge at Bear Hill", stream)) %>%
+  mutate(transect = paste0(stream, "_", Transect))
+
+# fix the stream vs. transect naming issues to be consistent and work with other data
+spp_dist <- featureids_matched %>%
+  select(-date) %>%
+  distinct() %>%
+  left_join(transect_stream) %>%
+  mutate(stream = ifelse(region == "WMaryland", stream, transect)) %>%
+  left_join(spp_dist) 
+
+filter(spp_dist, WMaryland == 1) # check that worked as expected
+
+spp_dist <- spp_dist %>%
+  select(-Transect, -stream)
+
+# write out object for later use
+saveRDS(spp_dist, "Data/Derived/spp_dist.rds")
+
 
 
 str(df_occ)
@@ -43,6 +77,7 @@ df_covariates1 <- df_covariates %>%
 
 # select just daily weather data of interest
 
+# filter out sites with NA because of bad lat lon
 
 # combine data and sort by region (make western MD the first or the last for ease of looping through differently)
 df_occ_all <- df_occ_all %>%
@@ -202,6 +237,7 @@ saveRDS(prcp7_std, "Data/Derived/prcp7_std.rds")
 covs <- df_occ_all %>% # probelm with 2018 with no pass 1?
   select(-pass1, -pass2, -pass3, -pass4, -species, - year) %>%
   distinct() %>%
+  left_join(spp_dist) %>% # add species range restrictions to covariates
   arrange(desc(region), transect_num)
 
 head(covs) # western maryland at the beginning

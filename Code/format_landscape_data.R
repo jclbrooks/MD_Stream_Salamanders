@@ -68,6 +68,7 @@ spec_dist <- landscape_vars %>%
   mutate(DMON = ifelse(transect == "COST22-1", 1, DMON)) %>%
   filter(!(transect %in% c("COST28-2", "COST8-3", "Fairway18-1", "COST21-3", "Picnic 21-1")))
 
+write.csv(spec_dist, "Data/species_ranges.csv", row.names = FALSE)
 
 
 # modeldata <- landscape_occ %>%
