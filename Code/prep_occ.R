@@ -58,6 +58,32 @@ df_occ_all <- df_occ_all %>%
 summary(df_occ_all) # check for NA and reasonable values
 str(df_occ_all)
 
+
+### Combos for expanding combinations for JAGS loops 
+
+# get numbers of transects, passes, and years for 3D array
+species <- unique(df_occ_all$species)
+
+n_sites <- length(unique(df_occ_all$transect_num))
+n_passes <- 4
+n_years <- length(unique(df_occ_all$year))
+
+n_sites * n_years
+n_sites * n_years * length(species)
+
+n_huc12 <- length(unique(df_occ_all$huc12))
+n_huc10 <- length(unique(df_occ_all$huc10))
+
+# occ1 should be expanded to 3546 to make into complete array - might work as build array?
+
+transect_num <- unique(df_occ_all$transect_num)
+year <- unique(df_occ_all$year)
+
+combos <- expand_grid(transect_num, year, species) %>%
+  arrange(species, transect_num, year) %>%
+  ungroup()
+
+
 ############## STILL NEED TO PUT IN DAILY COVARIATES INTO THE 3D ARRAYS BELOW - will only work if add western maryland separately or have pass in long format with dates to join in with daily covariates then spread 
 
 #---- potential easy strategy would be to get for non-maryland as a vector with a left join by featureid and date, the replicate that 4 times into a matrix that's the same for each pass. Then create maryland separately and bind_rows. I have all the daily covariates in the tempData object (should rename - used old code)
@@ -67,9 +93,13 @@ trans_num <- df_occ_all %>%
   select(region, transect, transect_num)
 
 # non-Western Maryland sites daily covariates
-non_wmd <- df_occ %>%
+ids <- featureids_matched %>%
   select(-date) %>%
-  left_join(featureids_matched, by = c("transect", "region")) %>%
+  distinct()
+  
+non_wmd <- df_occ %>%
+  # select(-date) %>%
+  left_join(ids, by = c("transect", "region")) %>%
   select(date, region, transect, featureid) %>%
   distinct() %>%
   filter(!region == "WMaryland") %>%
@@ -82,6 +112,15 @@ non_wmd <- df_occ %>%
   ungroup() # not sure if airTempLagged1, temp5p, temp7p, prcp2, prcp7, prcp30 are daily cov - yes they are
 
 summary(non_wmd) 
+
+prcp7_non <- non_wmd %>%
+  select(year, region, transect, transect_num, prcp7) %>%
+  mutate(pass1 = prcp7,
+         pass2 = prcp7,
+         pass3 = prcp7,
+         pass4 = prcp7) %>%
+  select(-prcp7)
+  
 
 # Need to expand to all years, standardize, and fill NA with 0
 
@@ -112,13 +151,39 @@ for(i in 2:nrow(wmd)) {
   wmd$pass[i] <- ifelse(wmd$transect[i] == wmd$transect[i-1], wmd$pass[i-1] + 1, 1)
 }
 
-prcp2_wmd <- wmd %>%
+prcp7_wmd <- wmd %>%
   group_by(region, transect, transect_num, year) %>%
-  select(region, transect, transect_num, year, pass, prcp2) %>%
-  pivot_wider(names_from = pass, values_from = prcp2, names_prefix = "pass")
+  select(region, transect, transect_num, year, pass, prcp7) %>%
+  pivot_wider(names_from = pass, values_from = prcp7, names_prefix = "pass")
 # Need to handle other years!!!!!!
 # Need to combine with non-wmd data, expand to all years, standardize, and fill NA with 0 
 
+str(prcp7_non)
+str(prcp7_wmd)
+
+# combine regions
+prcp7 <- bind_rows(prcp7_non, prcp7_wmd)
+
+# standardize
+
+
+prcp7_std <- combos %>%
+  select(-species) %>%
+  distinct() %>%
+  left_join(distinct(trans_num)) %>%
+  left_join(prcp7) %>%
+  ungroup() %>%
+  select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
+  arrange(desc(region), transect_num, year) %>%
+  select(pass1, pass2, pass3, pass4) %>%
+  as.matrix()
+
+prcp7_std <- (prcp7_std - mean(prcp7_std, na.rm = TRUE)) / sd(prcp7_std, na.rm = TRUE)
+prcp7_std[is.na(prcp7_std)] <- 0
+
+summary(prcp7_std)
+
+saveRDS(prcp7_std, "Data/Derived/prcp7_std.rds")
 
 # example code
 # dfus_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
@@ -131,27 +196,7 @@ prcp2_wmd <- wmd %>%
 
 
 
-# get numbers of transects, passes, and years for 3D array
-species <- unique(df_occ_all$species)
 
-n_sites <- length(unique(df_occ_all$transect_num))
-n_passes <- 4
-n_years <- length(unique(df_occ_all$year))
-
-n_sites * n_years
-n_sites * n_years * length(species)
-
-n_huc12 <- length(unique(df_occ_all$huc12))
-n_huc10 <- length(unique(df_occ_all$huc10))
-
-# occ1 should be expanded to 3546 to make into complete array - might work as build array?
-
-transect_num <- unique(df_occ_all$transect_num)
-year <- unique(df_occ_all$year)
-
-combos <- expand_grid(transect_num, year, species) %>%
-  arrange(species, transect_num, year) %>%
-  ungroup()
 
 
 covs <- df_occ_all %>% # probelm with 2018 with no pass 1?
@@ -172,7 +217,7 @@ dfus <- combos %>%
   ungroup() %>%
   dplyr::filter(species == "DFUS") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(dfus)
   
@@ -191,7 +236,7 @@ dmon <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "DMON") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(dmon)
   
@@ -210,7 +255,7 @@ doch <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "DOCH") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(doch)
   
@@ -229,7 +274,7 @@ ebis <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "EBIS") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(ebis)
   
@@ -248,7 +293,7 @@ egut <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "EGUT") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(egut)
   
@@ -267,7 +312,7 @@ elon <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "ELON") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(elon)
   
@@ -286,7 +331,7 @@ gpor <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "GPOR") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(gpor)
   
@@ -305,7 +350,7 @@ prub <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "PRUB") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(region, transect_num, year)
+  arrange(desc(region), transect_num, year)
   
 summary(prub)
   

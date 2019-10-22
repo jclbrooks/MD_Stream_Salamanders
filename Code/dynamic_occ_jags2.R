@@ -5,7 +5,7 @@ library(tidyr)
 
 # from Royle and Dorazio page 314
 
-testing <- TRUE
+testing <- FALSE
 if(testing) {
   na = 100
   nb = 500
@@ -16,12 +16,14 @@ if(testing) {
   na = 1000
   nb = 12000
   ni = 72000
-  nt = 3
+  nt = 6
   nc = 3
 }
 
 
 dfus_3d <- readRDS("Data/Derived/dfus_3d.rds")
+
+prcp7_std <- readRDS(("Data/Derived/prcp7_std.rds"))
 
 # covariates are going to need to be in the same order (by featureid) as occupancy data - do this in a separate script. Left join them and then organize and separate
 # df_covariates <- readRDS(file = "Data/Derived/landscape.rds")
@@ -57,14 +59,15 @@ cat("
       
       
       a0_p ~ dnorm(0, pow(1.5, -2)) # fixed intercept
-      a1 ~ dnorm(-1, pow(1.5, -2))  # behavioral effect for reduced detect with removal
+      a1 ~ dnorm(0, pow(1.5, -2))
+      a2 ~ dnorm(0, pow(1.5, -2))T( , 0)  # behavioral effect for reduced detect with removal
       
       
       for(i in 1:36) { # first 36 records are in western maryland
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
           }
         }
       } 
@@ -73,7 +76,7 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
+          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] + a2 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
           }
         }
       } 
@@ -100,7 +103,7 @@ cat("
         Z[i, 1] ~ dbern(psi[i, 1])
         
         for(t in 2:n_years) {
-          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior
+          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead
           Z[i, t] ~ dbern(psi[i, t])
         }
       }
@@ -150,7 +153,8 @@ dfus_data <- list(y = dfus_3d,
                   slope = as.numeric(scale(covs$slope_pcnt)),
                   air_mean = as.numeric(scale(covs$air_mean)),
                   precip = as.numeric(scale(covs$prcp_mo_mean)),
-                  area = as.numeric(scale(covs$AreaSqKM)))
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std))
                   
 # Good starting values for occupancy = max over passes
 dfus_init <- apply(dfus_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
@@ -167,6 +171,7 @@ params_autlog <- c(# "Z",
   "mean_p",
   "a0_p",
   "a1",
+  "a2",
   "mu_b0",
   "mu_b6",
   "sd_b0",

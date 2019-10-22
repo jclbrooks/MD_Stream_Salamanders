@@ -201,7 +201,7 @@ visit_passes <- max_pass_cap %>%
 
 cap3 <- cap2 %>%
   ungroup() %>%
-  left_join(ungroup(visit_passes)) %>%
+  right_join(ungroup(visit_passes)) %>%
   # filter(pass == 1 | is.na(pass)) %>%
   mutate(pass1 = ifelse(1 <= max_pass & is.na(pass1), 0, pass1),
          pass2 = ifelse(2 <= max_pass & is.na(pass2), 0, pass2),
@@ -469,4 +469,9 @@ unique(landscape_occ$species)
 # Save detailed occupancy data for western maryland
 saveRDS(landscape_occ, "Data/Derived/combined_detailed_occ.rds")
 
+#---------------cleaning---------------------
 
+rm(list = ls())
+gc()
+
+# unload packages?
