@@ -5,7 +5,7 @@ library(tidyr)
 
 # from Royle and Dorazio page 314
 
-testing <- FALSE
+testing <- TRUE
 if(testing) {
   na = 500
   nb = 1000
@@ -67,7 +67,7 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p  # + a1 * prcp7[i, j] add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
           }
         }
       } 
@@ -76,7 +76,7 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a2 * j # + a1 * prcp7[i, j] add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
+          logit(p[i,j,t]) <- a0_p + a2 * j + a1 * prcp7[i, j] #  add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
           }
         }
       } 
@@ -87,7 +87,7 @@ cat("
       b3 ~ dnorm(0, pow(1.5, -2))
       b4 ~ dnorm(0, pow(1.5, -2))
       b5 ~ dnorm(0, pow(1.5, -2))
-      # b6 ~ dnorm(0, pow(1.5, -2))
+      b6 ~ dnorm(0, pow(1.5, -2))
       mu_b6 ~ dnorm(0, pow(1.5, -2))
       
       sd_b0 ~ dt(0, pow(2, -2), 1)T(0, )
@@ -98,7 +98,7 @@ cat("
 
       for(h in 1:n_huc12) {
         b0[h] ~ dnorm(mu_b0, sd_b0)
-        b6[h] ~ dnorm(mu_b6, sd_b6)
+        # b6[h] ~ dnorm(mu_b6, sd_b6)
       }
       
       # Process model
@@ -107,7 +107,7 @@ cat("
         Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
         
         for(t in 2:n_years) {
-          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6[huc[i]] * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
+          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
           Z[i, t] ~ dbern(psi[i, t] * zeta[i]) # makes psi the suitability and psi * zeta the prob of occupancy
         }
       }
@@ -187,7 +187,7 @@ params_autlog <- c(# "Z",
   "b3",
   "b4",
   "b5",
-  # "b6",
+  "b6",
   "mu_p",
   "sd_p",
   "Z_sum",
@@ -306,6 +306,55 @@ autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/dmon_mcmc.rds")
+
+
+
+#--------- EBIS -------------
+ebis_3d <- readRDS("Data/Derived/ebis_3d.rds")
+
+ebis_data <- list(y = ebis_3d, 
+                  n_sites = dim(ebis_3d)[1], 
+                  n_passes = dim(ebis_3d)[2],
+                  n_years = dim(ebis_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$EBIS)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+ebis_init <- apply(ebis_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(ebis_init[ebis_init == -Inf]) # how many site-years with no obs
+ebis_init[ebis_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = ebis_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = ebis_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/ebis_mcmc.rds")
+
 
 # from Royle and Dorazio page 314
 
