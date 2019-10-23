@@ -213,7 +213,6 @@ prcp7 <- bind_rows(prcp7_non, prcp7_wmd)
 
 # standardize
 
-
 prcp7_std <- combos %>%
   select(-species) %>%
   distinct() %>%
@@ -225,6 +224,7 @@ prcp7_std <- combos %>%
   select(pass1, pass2, pass3, pass4) %>%
   as.matrix()
 
+# prcp7_std[prcp7_std > 200] <- 200 # problematic mass rainfall or data errors. Cut off at 200 
 prcp7_std <- (prcp7_std - mean(prcp7_std, na.rm = TRUE)) / sd(prcp7_std, na.rm = TRUE)
 prcp7_std[is.na(prcp7_std)] <- 0
 
@@ -259,23 +259,42 @@ saveRDS(covs, "Data/Derived/covs.rds")
 
 # Separate by species and make into 3D array with transect x pass x year
 
+
+
+combos <- combos %>%
+  left_join(distinct(trans_num))
+
 # DFUS
 dfus <- combos %>%
   left_join(df_occ_all) %>%
   ungroup() %>%
   dplyr::filter(species == "DFUS") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
-  
-summary(dfus)
-  
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
+
+# dfus$region_num <- NA_integer_
+# dfus$region_num[1] <- 1
+# 
+# for(i in 2:nrow(dfus)) {
+#   dfus$region_num[i] <- ifelse(dfus$region[i] == dfus$region[i-1], dfus$region_num[i-1], dfus$region_num[i-1] + 1)
+# }
+#   
+# summary(dfus)
+#   
+Year <- sort(year)
+# regions <- unique(dfus$region)
+# n_regions <- length(regions)
+
 dfus_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
+# for(i in 1:n_sites) {
 for(t in 1:n_years) {
     dfus_3d[ , , t] <- dfus %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
+# }
 
 saveRDS(dfus_3d, "Data/Derived/dfus_3d.rds")
 
@@ -284,14 +303,15 @@ dmon <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "DMON") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(dmon)
   
 dmon_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     dmon_3d[ , , t] <- dmon %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -303,14 +323,15 @@ doch <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "DOCH") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(doch)
   
 doch_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     doch_3d[ , , t] <- doch %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -322,14 +343,15 @@ ebis <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "EBIS") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(ebis)
   
 ebis_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     ebis_3d[ , , t] <- ebis %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -341,14 +363,15 @@ egut <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "EGUT") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(egut)
   
 egut_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     egut_3d[ , , t] <- egut %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -360,14 +383,15 @@ elon <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "ELON") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(elon)
   
 elon_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     elon_3d[ , , t] <- elon %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -379,14 +403,15 @@ gpor <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "GPOR") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(gpor)
   
 gpor_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     gpor_3d[ , , t] <- gpor %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }
@@ -398,14 +423,15 @@ prub <- combos %>%
   left_join(df_occ_all) %>%
   dplyr::filter(species == "PRUB") %>% # probelm with 2018 with no pass 1?
   select(region, transect_num, year, pass1, pass2, pass3, pass4) %>%
-  arrange(desc(region), transect_num, year)
+  arrange(desc(region), transect_num, year) %>%
+  data.frame(. , stringsAsFactors = FALSE)
   
 summary(prub)
   
 prub_3d <- array(NA_integer_, c(n_sites, n_passes, n_years))
 for(t in 1:n_years) {
     prub_3d[ , , t] <- prub %>% 
-      filter(year == year[t]) %>%
+      filter(year == Year[t]) %>%
       dplyr::select(starts_with("pass")) %>%
       as.matrix()
 }

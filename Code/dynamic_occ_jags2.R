@@ -5,13 +5,13 @@ library(tidyr)
 
 # from Royle and Dorazio page 314
 
-testing <- FALSE
+testing <- TRUE
 if(testing) {
-  na = 100
-  nb = 500
-  ni = 500 + nb
+  na = 500
+  nb = 1000
+  ni = 2000 + nb
   nt = 1
-  nc = 1
+  nc = 3
 } else {
   na = 1000
   nb = 12000
@@ -67,7 +67,7 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+          logit(p[i,j,t]) <- a0_p  # + a1 * prcp7[i, j] add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
           }
         }
       } 
@@ -76,7 +76,7 @@ cat("
         # a0_p[i] ~ dnorm(mu_p, sd_p)
         for(t in 1:n_years) {
           for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] + a2 * j # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
+          logit(p[i,j,t]) <- a0_p + a2 * j # + a1 * prcp7[i, j] add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
           }
         }
       } 
@@ -87,11 +87,15 @@ cat("
       b3 ~ dnorm(0, pow(1.5, -2))
       b4 ~ dnorm(0, pow(1.5, -2))
       b5 ~ dnorm(0, pow(1.5, -2))
+      # b6 ~ dnorm(0, pow(1.5, -2))
       mu_b6 ~ dnorm(0, pow(1.5, -2))
       
-      sd_b0 ~ dt(0, pow(2,-2), 1)T(0, )
-      sd_b6 ~ dt(0, pow(1,-2), 1)T(0, )
-      
+      sd_b0 ~ dt(0, pow(2, -2), 1)T(0, )
+      sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
+
+# sd_b0 ~ dunif(0, 5)
+# sd_b6 ~ dunif(0, 5)
+
       for(h in 1:n_huc12) {
         b0[h] ~ dnorm(mu_b0, sd_b0)
         b6[h] ~ dnorm(mu_b6, sd_b6)
@@ -99,12 +103,12 @@ cat("
       
       # Process model
       for(i in 1:n_sites) { # sites or transects or streams?
-        logit(psi[i, 1]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] # multiple the whole thing by vector of species range
+        logit(psi[i, 1]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] # multiple the whole thing by vector of species range + b4 * air_mean[i] * air_mean[i]
         Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
         
         for(t in 2:n_years) {
-          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead
-          Z[i, t] ~ dbern(psi[i, t] * zeta[i])
+          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6[huc[i]] * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
+          Z[i, t] ~ dbern(psi[i, t] * zeta[i]) # makes psi the suitability and psi * zeta the prob of occupancy
         }
       }
       
@@ -142,13 +146,14 @@ sink()
 
 
 # make data list for JAGS
+# pairs(covs[ , 5:11])
 
 dfus_data <- list(y = dfus_3d, 
                   n_sites = dim(dfus_3d)[1], 
                   n_passes = dim(dfus_3d)[2],
                   n_years = dim(dfus_3d)[3],
-                  n_huc12 = 25,
-                  huc = as.integer(as.factor(covs$huc10)),
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
                   forest = as.numeric(scale(covs$forest)),
                   slope = as.numeric(scale(covs$slope_pcnt)),
                   air_mean = as.numeric(scale(covs$air_mean)),
@@ -182,6 +187,7 @@ params_autlog <- c(# "Z",
   "b3",
   "b4",
   "b5",
+  # "b6",
   "mu_p",
   "sd_p",
   "Z_sum",
