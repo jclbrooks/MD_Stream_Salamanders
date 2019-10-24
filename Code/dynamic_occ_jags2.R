@@ -1,6 +1,7 @@
 library(jagsUI)
 library(dplyr)
 library(tidyr)
+library(psych) # for the pairs scatterplot
 
 
 # from Royle and Dorazio page 314
@@ -13,13 +14,14 @@ if(testing) {
   nt = 1
   nc = 3
 } else {
-  na = 1000
-  nb = 12000
-  ni = 72000
-  nt = 6
+  na = 2000
+  nb = 20000
+  ni = 100000
+  nt = 12
   nc = 3
 }
 
+if(!dir.exists("Results")) dir.create("Results")
 
 dfus_3d <- readRDS("Data/Derived/dfus_3d.rds")
 
@@ -146,7 +148,15 @@ sink()
 
 
 # make data list for JAGS
-# pairs(covs[ , 5:11])
+# pairs(covs[ , c("forest", "slope_pcnt", "air_mean", "prcp_mo_mean", "AreaSqKM", "elevation", "impervious")])
+pdf(file = "Results/scatterplot_matrix.pdf")
+pairs.panels(covs[ , c("forest", "slope_pcnt", "air_mean", "prcp_mo_mean", "AreaSqKM", "elevation", "impervious")], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+)
+dev.off()
 
 dfus_data <- list(y = dfus_3d, 
                   n_sites = dim(dfus_3d)[1], 
@@ -309,6 +319,52 @@ saveRDS(autlog, "Results/dmon_mcmc.rds")
 
 
 
+#--------- DOCH -------------
+doch_3d <- readRDS("Data/Derived/doch_3d.rds")
+
+doch_data <- list(y = doch_3d, 
+                  n_sites = dim(doch_3d)[1], 
+                  n_passes = dim(doch_3d)[2],
+                  n_years = dim(doch_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$DOCH)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+doch_init <- apply(doch_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(doch_init[doch_init == -Inf]) # how many site-years with no obs
+doch_init[doch_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = doch_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = doch_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/doch_mcmc.rds")
+
 #--------- EBIS -------------
 ebis_3d <- readRDS("Data/Derived/ebis_3d.rds")
 
@@ -354,6 +410,195 @@ autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/ebis_mcmc.rds")
+
+
+#--------- EGUT -------------
+egut_3d <- readRDS("Data/Derived/egut_3d.rds")
+
+egut_data <- list(y = egut_3d, 
+                  n_sites = dim(egut_3d)[1], 
+                  n_passes = dim(egut_3d)[2],
+                  n_years = dim(egut_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$EGUT)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+egut_init <- apply(egut_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(egut_init[egut_init == -Inf]) # how many site-years with no obs
+egut_init[egut_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = egut_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = egut_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/egut_mcmc.rds")
+
+
+#--------- ELON -------------
+elon_3d <- readRDS("Data/Derived/elon_3d.rds")
+
+elon_data <- list(y = elon_3d, 
+                  n_sites = dim(elon_3d)[1], 
+                  n_passes = dim(elon_3d)[2],
+                  n_years = dim(elon_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$ELON)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+elon_init <- apply(elon_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(elon_init[elon_init == -Inf]) # how many site-years with no obs
+elon_init[elon_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = elon_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = elon_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/elon_mcmc.rds")
+
+
+#--------- GPOR -------------
+gpor_3d <- readRDS("Data/Derived/gpor_3d.rds")
+
+gpor_data <- list(y = gpor_3d, 
+                  n_sites = dim(gpor_3d)[1], 
+                  n_passes = dim(gpor_3d)[2],
+                  n_years = dim(gpor_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$GPOR)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+gpor_init <- apply(gpor_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(gpor_init[gpor_init == -Inf]) # how many site-years with no obs
+gpor_init[gpor_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = gpor_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = gpor_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/gpor_mcmc.rds")
+
+
+#--------- PRUB -------------
+prub_3d <- readRDS("Data/Derived/prub_3d.rds")
+
+prub_data <- list(y = prub_3d, 
+                  n_sites = dim(prub_3d)[1], 
+                  n_passes = dim(prub_3d)[2],
+                  n_years = dim(prub_3d)[3],
+                  n_huc12 = length(unique(covs$huc12)),
+                  huc = as.integer(as.factor(covs$huc12)),
+                  forest = as.numeric(scale(covs$forest)),
+                  slope = as.numeric(scale(covs$slope_pcnt)),
+                  air_mean = as.numeric(scale(covs$air_mean)),
+                  precip = as.numeric(scale(covs$prcp_mo_mean)),
+                  area = as.numeric(scale(covs$AreaSqKM)),
+                  prcp7 = as.matrix(prcp7_std),
+                  zeta = as.numeric(covs$PRUB)) # range of the species 
+
+# Good starting values for occupancy = max over passes
+prub_init <- apply(prub_3d, MARGIN = c(1, 3), max, na.rm = TRUE) # obs in any pass then Z = 1, warnings ok and addressed below
+fill_len <- length(prub_init[prub_init == -Inf]) # how many site-years with no obs
+prub_init[prub_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
+
+inits <- function(){
+  list(Z = prub_init)
+  # p = runif(n_years, 0.4, 0.6))
+}
+
+autlog <- jags(data = prub_data,
+               inits = inits,
+               parameters.to.save = params_autlog,
+               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               n.chains = nc,
+               n.adapt = na,
+               n.iter = ni,
+               n.burnin = nb,
+               n.thin = nt, 
+               parallel = TRUE,
+               n.cores = nc,
+               modules=c('glm'))
+
+# Results
+autlog
+
+if(!dir.exists("Results")) dir.create("Results")
+saveRDS(autlog, "Results/prub_mcmc.rds")
+
 
 
 # from Royle and Dorazio page 314
