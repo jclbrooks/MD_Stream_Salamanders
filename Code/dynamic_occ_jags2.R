@@ -90,10 +90,10 @@ cat("
       b4 ~ dnorm(0, pow(1.5, -2))
       b5 ~ dnorm(0, pow(1.5, -2))
       b6 ~ dnorm(0, pow(1.5, -2))
-      mu_b6 ~ dnorm(0, pow(1.5, -2))
+      # mu_b6 ~ dnorm(0, pow(1.5, -2))
       
       sd_b0 ~ dt(0, pow(2, -2), 1)T(0, )
-      sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
+      # sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
 
 # sd_b0 ~ dunif(0, 5)
 # sd_b6 ~ dunif(0, 5)
@@ -189,9 +189,9 @@ params_autlog <- c(# "Z",
   "a1",
   "a2",
   "mu_b0",
-  "mu_b6",
+  # "mu_b6",
   "sd_b0",
-  "sd_b6",
+  # "sd_b6",
   "b1",
   "b2",
   "b3",
@@ -217,58 +217,12 @@ autlog <- jags(data = dfus_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/dfus_mcmc.rds")
 
-plot(autlog)
-
-library(ggplot2)
-library(tidyr)
-library(bayesplot)
-library(tidybayes)
-
-posterior <- as.matrix(autlog$samples)
-
-plot_title <- ggtitle("Posterior distributions",
-                      "with medians and 80% intervals")
-mcmc_areas(posterior, regex_pars = c("Z_sum"),
-           prob = 0.8) + plot_title
-
-posterior_Z <- select(as.data.frame(posterior), starts_with("Z_sum"))
-
-# pivot_longer and make specific years then plot
-Z_long <- as.data.frame(posterior) %>%
-  select(starts_with("Z_sum")) 
-
-colnames(Z_long) <- 2006:2018
-
-Z_long <- Z_long %>%
-  pivot_longer(cols = starts_with("2"),
-               names_to = "year",
-               values_to = "Z")
-
-ggplot(data = Z_long, aes(year, Z)) + geom_violin()
-ggplot(data = Z_long, aes(year, Z)) + geom_boxplot()
-
-color_scheme_set("purple")
-
-ppc_intervals(
-  # y = mtcars$mpg,
-  yrep = posterior_predict(posterior),
-  x = mtcars$wt,
-  prob = 0.5
-) +
-  labs(
-    x = "Weight (1000 lbs)",
-    y = "MPG",
-    title = "50% posterior predictive intervals \nvs observed miles per gallon",
-    subtitle = "by vehicle weight"
-  ) +
-  panel_bg(fill = "gray95", color = NA) +
-  grid_lines(color = "white")
-
+# plot(autlog)
 
 
 #--------- DMON -------------
@@ -312,7 +266,7 @@ autlog <- jags(data = dmon_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/dmon_mcmc.rds")
@@ -360,7 +314,7 @@ autlog <- jags(data = doch_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/doch_mcmc.rds")
@@ -406,7 +360,7 @@ autlog <- jags(data = ebis_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/ebis_mcmc.rds")
@@ -453,7 +407,7 @@ autlog <- jags(data = egut_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/egut_mcmc.rds")
@@ -500,7 +454,7 @@ autlog <- jags(data = elon_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/elon_mcmc.rds")
@@ -547,7 +501,7 @@ autlog <- jags(data = gpor_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/gpor_mcmc.rds")
@@ -594,7 +548,7 @@ autlog <- jags(data = prub_data,
                modules=c('glm'))
 
 # Results
-autlog
+# autlog
 
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/prub_mcmc.rds")
