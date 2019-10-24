@@ -6,7 +6,7 @@ library(psych) # for the pairs scatterplot
 
 # from Royle and Dorazio page 314
 
-testing <- TRUE
+testing <- FALSE
 if(testing) {
   na = 500
   nb = 1000
@@ -46,102 +46,111 @@ covs <- readRDS("Data/Derived/covs.rds")
 sink("Code/JAGS/dynamic_autologistic_occ2.txt")
 cat("
     model {
-      
-      # Priors    
-      
-      # mu_psi ~ dnorm(0, pow(1.5, -2))
-      # sd_psi ~ dt(0, pow(2,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
-      
-      # mu_p ~ dnorm(0, pow(1.5, -2))
-      # sd_p ~ dt(0, pow(2,-2), 1)T(0, )
-      
-      #for(i in 1:n_huc12) {
-      #  b0_psi[i] ~ dnorm(mu_psi, sd_psi)
-      # }
-      
-      
-      a0_p ~ dnorm(0, pow(1.5, -2)) # fixed intercept
-      a1 ~ dnorm(0, pow(1.5, -2))
-      a2 ~ dnorm(0, pow(1.5, -2))T( , 0)  # behavioral effect for reduced detect with removal
-      
-      
-      for(i in 1:36) { # first 36 records are in western maryland
-        # a0_p[i] ~ dnorm(mu_p, sd_p)
-        for(t in 1:n_years) {
-          for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
-          }
-        }
-      } 
-      
-            for(i in 37:n_sites) {
-        # a0_p[i] ~ dnorm(mu_p, sd_p)
-        for(t in 1:n_years) {
-          for(j in 1:n_passes) {
-          logit(p[i,j,t]) <- a0_p + a2 * j + a1 * prcp7[i, j] #  add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
-          }
-        }
-      } 
-      
-      mu_b0 ~ dnorm(0, pow(1.5, -2))
-      b1 ~ dnorm(0, pow(1.5, -2))
-      b2 ~ dnorm(0, pow(1.5, -2))
-      b3 ~ dnorm(0, pow(1.5, -2))
-      b4 ~ dnorm(0, pow(1.5, -2))
-      b5 ~ dnorm(0, pow(1.5, -2))
-      b6 ~ dnorm(0, pow(1.5, -2))
-      # mu_b6 ~ dnorm(0, pow(1.5, -2))
-      
-      sd_b0 ~ dt(0, pow(2, -2), 1)T(0, )
-      # sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
+    
+    # Priors    
+    
+    # mu_psi ~ dnorm(0, pow(1.5, -2))
+    # sd_psi ~ dt(0, pow(2,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
+    
+    # mu_p ~ dnorm(0, pow(1.5, -2))
+    # sd_p ~ dt(0, pow(2,-2), 1)T(0, )
+    
+    #for(i in 1:n_huc12) {
+    #  b0_psi[i] ~ dnorm(mu_psi, sd_psi)
+    # }
+    
+    
+    a0_p ~ dnorm(0, pow(1.5, -2)) # fixed intercept
+    a1 ~ dnorm(0, pow(1.5, -2))
+    a2 ~ dnorm(0, pow(1.5, -2))T( , 0)  # behavioral effect for reduced detect with removal
+    
+    
+    for(i in 1:36) { # first 36 records are in western maryland
+    # a0_p[i] ~ dnorm(mu_p, sd_p)
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+    }
+    }
+    } 
+    
+    for(i in 37:n_sites) {
+    # a0_p[i] ~ dnorm(mu_p, sd_p)
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    logit(p[i,j,t]) <- a0_p + a2 * j + a1 * prcp7[i, j] #  add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
+    }
+    }
+    } 
+    
+    mu_b0 ~ dnorm(0, pow(1.5, -2))
+    b1 ~ dnorm(0, pow(1.5, -2))
+    b2 ~ dnorm(0, pow(1.5, -2))
+    b3 ~ dnorm(0, pow(1.5, -2))
+    b4 ~ dnorm(0, pow(1.5, -2))
+    b5 ~ dnorm(0, pow(1.5, -2))
+    b6 ~ dnorm(0, pow(1.5, -2))
+    # mu_b6 ~ dnorm(0, pow(1.5, -2))
+    
+    sd_b0 ~ dt(0, pow(1, -2), 1)T(0, )
+    # sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
+    
+    # sd_b0 ~ dunif(0, 5)
+    # sd_b6 ~ dunif(0, 5)
+    
+    for(h in 1:n_sites) {
+    b0[h] ~ dnorm(mu_b0, sd_b0)
+    # b6[h] ~ dnorm(mu_b6, sd_b6)
+    }
+    
+    # Process model
+    for(i in 1:n_sites) { # sites or transects or streams?
+    logit(psi[i, 1]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] # multiple the whole thing by vector of species range + b4 * air_mean[i] * air_mean[i]
+    Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
+    
+    for(t in 2:n_years) {
+    logit(psi[i,t]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
+    Z[i, t] ~ dbern(psi[i, t] * zeta[i]) # makes psi1 the suitability and psi * zeta the prob of occupancy
+    }
+    }
 
-# sd_b0 ~ dunif(0, 5)
-# sd_b6 ~ dunif(0, 5)
-
-      for(h in 1:n_huc12) {
-        b0[h] ~ dnorm(mu_b0, sd_b0)
-        # b6[h] ~ dnorm(mu_b6, sd_b6)
-      }
-      
-      # Process model
-      for(i in 1:n_sites) { # sites or transects or streams?
-        logit(psi[i, 1]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] # multiple the whole thing by vector of species range + b4 * air_mean[i] * air_mean[i]
-        Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
-        
-        for(t in 2:n_years) {
-          logit(psi[i,t]) <- b0[huc[i]] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
-          Z[i, t] ~ dbern(psi[i, t] * zeta[i]) # makes psi the suitability and psi * zeta the prob of occupancy
-        }
-      }
-      
-      # Observation model - need to separate for visits vs. passes
-      for(i in 1:n_sites) {
-        for(t in 1:n_years) {
-          for(j in 1:n_passes) {
-            mu_y[i,j,t] <- Z[i, t] * p[i,j,t]
-            y[i,j,t] ~ dbern(mu_y[i,j,t])
-          }
-        }
-      }
-      
-      # Derived parameters?
-      mean_psi <- mean(psi[ , ])
-      mean_p <- mean(p[ , 1, ])
-      
-      for(t in 1:n_years) {
-      Z_sum[t] <- sum(Z[ , t])
-      }
-      
-      # for(i in 1:n_sites) { 
-        for(t in 2:n_years) {
-          turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
-        }
-      # }
-      
-      # calculate average turnover rates per region across years?
-      
-      } # end model
-
+# for(i in 1:n_sites) {
+# for(t in 2:n_years) {
+# psi[i, t] <- psi1[i, t] * zeta[i]
+# }
+# }
+    
+    # Observation model - need to separate for visits vs. passes
+    for(i in 1:n_sites) {
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    mu_y[i,j,t] <- Z[i, t] * p[i,j,t]
+    y[i,j,t] ~ dbern(mu_y[i,j,t])
+    }
+    }
+    }
+    
+    # Derived parameters?
+    mean_psi <- mean(psi[ , ])
+    mean_p <- mean(p[ , 1, ])
+    
+    for(t in 1:n_years) {
+    Z_sum[t] <- sum(Z[ , t])
+    }
+    
+    # for(i in 1:n_sites) { 
+    for(t in 2:n_years) {
+    turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
+    }
+    # }
+    
+    # calculate average turnover rates per region across years?
+    
+    
+    # AUC
+    
+    } # end model
+    
     ", fill=TRUE)
 sink()
 
@@ -198,6 +207,8 @@ params_autlog <- c(# "Z",
   "b4",
   "b5",
   "b6",
+  # "psi",
+  "Z",
   "mu_p",
   "sd_p",
   "Z_sum",
