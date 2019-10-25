@@ -92,7 +92,7 @@ cat("
     b6 ~ dnorm(0, pow(1.5, -2))
     # mu_b6 ~ dnorm(0, pow(1.5, -2))
     
-    sd_b0 ~ dt(0, pow(1, -2), 1)T(0, )
+    sd_b0 ~ dt(0, pow(1.3, -2), 1)T(0, )
     # sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
     
     # sd_b0 ~ dunif(0, 5)
@@ -235,6 +235,7 @@ saveRDS(autlog, "Results/dfus_mcmc.rds")
 
 # plot(autlog)
 
+rm(autlog)
 
 #--------- DMON -------------
 dmon_3d <- readRDS("Data/Derived/dmon_3d.rds")
@@ -282,7 +283,7 @@ autlog <- jags(data = dmon_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/dmon_mcmc.rds")
 
-
+rm(autlog)
 
 #--------- DOCH -------------
 doch_3d <- readRDS("Data/Derived/doch_3d.rds")
@@ -330,6 +331,8 @@ autlog <- jags(data = doch_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/doch_mcmc.rds")
 
+rm(autlog)
+
 #--------- EBIS -------------
 ebis_3d <- readRDS("Data/Derived/ebis_3d.rds")
 
@@ -376,6 +379,7 @@ autlog <- jags(data = ebis_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/ebis_mcmc.rds")
 
+rm(autlog)
 
 #--------- EGUT -------------
 egut_3d <- readRDS("Data/Derived/egut_3d.rds")
@@ -423,6 +427,7 @@ autlog <- jags(data = egut_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/egut_mcmc.rds")
 
+rm(autlog)
 
 #--------- ELON -------------
 elon_3d <- readRDS("Data/Derived/elon_3d.rds")
@@ -470,6 +475,7 @@ autlog <- jags(data = elon_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/elon_mcmc.rds")
 
+rm(autlog)
 
 #--------- GPOR -------------
 gpor_3d <- readRDS("Data/Derived/gpor_3d.rds")
@@ -517,6 +523,7 @@ autlog <- jags(data = gpor_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/gpor_mcmc.rds")
 
+rm(autlog)
 
 #--------- PRUB -------------
 prub_3d <- readRDS("Data/Derived/prub_3d.rds")
@@ -564,7 +571,7 @@ autlog <- jags(data = prub_data,
 if(!dir.exists("Results")) dir.create("Results")
 saveRDS(autlog, "Results/prub_mcmc.rds")
 
-
+rm(autlog)
 
 # from Royle and Dorazio page 314
 
