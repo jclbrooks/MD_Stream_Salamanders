@@ -52,7 +52,7 @@ posterior_Z <- select(as.data.frame(posterior), starts_with("Z_sum"))
 Z_long <- as.data.frame(posterior) %>%
   select(starts_with("Z_sum")) 
 
-colnames(Z_long) <- 2006:2018
+colnames(Z_long) <- 2001:2018
 
 # broke this
 Z_long <- Z_long %>%
@@ -60,5 +60,5 @@ Z_long <- Z_long %>%
                names_to = "year",
                values_to = "Z")
 
-ggplot(data = Z_long, aes(year, Z)) + geom_violin()
+ggplot(data = Z_long, aes(year, Z, fill = "blue")) + geom_violin()
 ggplot(data = Z_long, aes(year, Z)) + geom_boxplot()
