@@ -1,9 +1,45 @@
+########## Load Libraries ##########
+library(coda)
+library(rjags)
+# library(devtools)
+# install_github("https://github.com/stan-dev/bayesplot") # if want latest development version of bayesplot)
 library(ggplot2)
 library(tidyr)
 library(bayesplot)
 library(tidybayes)
+library(dplyr)
 
-posterior <- as.matrix(autlog$samples)
+######### Load MCMC Object #########
+
+out <- readRDS("Results/dfus_msmc.rds")
+
+out$summary
+
+samples <- out$samples
+
+######### Check MCMC ########
+
+color_scheme_set("mix-blue-pink")
+p <- mcmc_trace(samples, regex_pars = c("sd"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("mean_psi"))
+p + facet_text(size = 15)
+
+# p <- mcmc_trace(samples, regex_pars = c("alpha1"))
+# p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("b"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, pars = c("a0_p", "a1", "a2"))
+p + facet_text(size = 15)
+
+# p <- mcmc_trace(samples, regex_pars = c("Z_sum")) # too big I think
+# p + facet_text(size = 15)
+
+
+posterior <- as.matrix(out$samples)
 
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
@@ -18,6 +54,7 @@ Z_long <- as.data.frame(posterior) %>%
 
 colnames(Z_long) <- 2006:2018
 
+# broke this
 Z_long <- Z_long %>%
   pivot_longer(cols = starts_with("2"),
                names_to = "year",
@@ -25,20 +62,3 @@ Z_long <- Z_long %>%
 
 ggplot(data = Z_long, aes(year, Z)) + geom_violin()
 ggplot(data = Z_long, aes(year, Z)) + geom_boxplot()
-
-color_scheme_set("purple")
-
-ppc_intervals(
-  # y = mtcars$mpg,
-  yrep = posterior_predict(posterior),
-  x = mtcars$wt,
-  prob = 0.5
-) +
-  labs(
-    x = "Weight (1000 lbs)",
-    y = "MPG",
-    title = "50% posterior predictive intervals \nvs observed miles per gallon",
-    subtitle = "by vehicle weight"
-  ) +
-  panel_bg(fill = "gray95", color = NA) +
-  grid_lines(color = "white")
