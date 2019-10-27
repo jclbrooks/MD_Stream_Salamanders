@@ -3,9 +3,12 @@
 .RData
 .Ruserdata
 .DS_Store
+.Rprofile
 *.jpeg
 *.jpg
 *.png
+*.docx
+*.pdf
 Results/
 Landscape_ecology/
 landscape_characteristics/Catchments02.csv
