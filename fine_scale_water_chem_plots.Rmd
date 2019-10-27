@@ -1,0 +1,447 @@
+---
+title: "Fine-scale water chemistry"
+author: "Jacey Brooks"
+date: "10/23/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(tidyr)
+library(dplyr)
+library(lme4)
+library(ggplot2)
+library(lubridate)
+library(AICcmodavg)
+library(extrafont)
+
+sal <- read.csv("Data/Date_Location_Transect_Visit_Data_Processed.csv", stringsAsFactors = FALSE)
+water <- read.csv("Data/finescale_water_chem_results.csv", stringsAsFactors = F) %>%
+  select(-date)
+
+sal_water <- sal %>%
+  ungroup() %>%
+  dplyr::select(-type, -up_down, -dist, - visit, -total, -observers, -time_min, -air, -pH, -water, -DO, -EC, -TDS) %>%
+  group_by(date, stream, transect) %>%
+  pivot_longer(cols = c(DFUSL, DFUSA, DOCHL, DOCHA, DMONL, DMONA, EBISL, EBISA, GPORL, GPORA, PRUBL, PRUBA), names_to = "species" ) %>%
+  mutate(spec = substr(species, start = 1, stop = 4)) %>%
+  select(-species) %>%
+  group_by(date, stream, transect, spec) %>%
+  summarise_all(sum) %>%
+  pivot_wider(names_from = spec, values_from = value) %>%
+  pivot_longer(cols = c(DFUS, DOCH, DMON, EBIS, GPOR, PRUB), names_to = "species") %>%
+  ungroup() %>%
+  mutate(transect = paste0(stream, "_", transect)) %>%
+  left_join(water, na.rm = T)
+```
+
+# All Streams
+
+```{r orthophosphate, echo = FALSE}
+ggplot(sal_water, aes(x = up_down, y = orthophosphate)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("Sulfate (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+
+```{r total_ammonia, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = total_ammonia)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("total_ammonia; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+
+```{r nitrite, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = nitrite)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("nitrite (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r nitrate, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = nitrate)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("nitrate (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r sodium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = sodium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("sodium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r potassium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = potassium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("potassium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r magnesium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = magnesium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("magnesium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r calcium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = calcium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("calcium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r chloride, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = chloride)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("chloride (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r bromide, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = bromide)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("bromide (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r sulfate, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = sulfate)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("sulfate (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+# Only 1 Reference Stream (Elklick) and 1 Restored Stream (Koch, with both 1U and 1D)
+
+```{r boron, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = boron)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("boron (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r aluminum, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = aluminum)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("aluminum (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r silicon, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = silicon)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("silicon (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r vanadium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = vanadium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("vanadium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r chromium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = chromium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("chromium (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r manganese, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = manganese)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("manganese (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r iron, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = iron)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("iron (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r cobalt, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = cobalt)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("cobalt (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r nickel, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = nickel)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("nickel (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+```{r copper, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = copper)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("copper (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r zinc, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = zinc)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("zinc (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r arsenic;, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = arsenic)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("arsenic; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+
+```{r selenium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = selenium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("selenium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r strontium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = strontium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("strontium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r molybdenum, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = molybdenum)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("molybdenum; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r silver, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = silver)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("silver; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r cadmium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = cadmium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("cadmium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r tin, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = tin)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("tin; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+
+```{r antimony, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = antimony)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("antimony; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r barium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = barium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("barium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r thallium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = thallium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("thallium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r lead, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = lead)) + geom_boxplot(fill = "orange") + theme_classic() + xlab("Stream Section") + ylab("lead; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r bismuth, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = bismuth)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("bismuth; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
+
+```{r uranium, echo=FALSE}
+ggplot(sal_water, aes(x = up_down, y = uranium)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("uranium; (microM/L") + theme(text = element_text( size = 15),axis.text.x = element_text(size = 15, angle = 90),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())# + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+```
