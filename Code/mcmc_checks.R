@@ -46,6 +46,21 @@ plot_title <- ggtitle("Posterior distributions",
 mcmc_areas(posterior, regex_pars = c("Z_sum"),
            prob = 0.8) + plot_title
 
+# https://cran.r-project.org/web/packages/bayesplot/vignettes/plotting-mcmc-draws.html
+# Summarize posteriors with intervals or areas
+posterior_1 <- dplyr::select(as.data.frame(posterior), -starts_with("Z_sum"))
+
+mcmc_intervals(x = posterior_1, pars = c("mu_b0", "b1", "b2", "b3", "b4", "b5", "b6")) # remove whichever one wasn't in the model
+
+mcmc_intervals(x = posterior_1, pars = c("a0_p", "a1", "a2"))
+
+mcmc_areas(posterior_1, pars = c("mu_b0", "b1", "b2", "b3", "b4", "b5", "b6"), # remove the one not in the model b4 or b6
+           prob = 0.8)
+
+mcmc_areas(posterior_1, pars = c("a0_p", "a1", "a2"),
+           prob = 0.8)
+
+
 posterior_Z <- select(as.data.frame(posterior), starts_with("Z_sum"))
 
 # pivot_longer and make specific years then plot

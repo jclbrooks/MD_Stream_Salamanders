@@ -17,7 +17,7 @@ if(testing) {
   na = 2000
   nb = 20000
   ni = 100000
-  nt = 12
+  nt = 20
   nc = 3
 }
 
@@ -105,11 +105,11 @@ cat("
     
     # Process model
     for(i in 1:n_sites) { # sites or transects or streams?
-    logit(psi[i, 1]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] # multiple the whole thing by vector of species range + b4 * air_mean[i] * air_mean[i]
+    logit(psi[i, 1]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] # multiple the whole thing by vector of species range + b5 * air_mean[i] * air_mean[i]
     Z[i, 1] ~ dbern(psi[i, 1] * zeta[i])
     
     for(t in 2:n_years) {
-    logit(psi[i,t]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b5 * precip[i] + b6 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
+    logit(psi[i,t]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b5 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
     Z[i, t] ~ dbern(psi[i, t] * zeta[i]) # makes psi1 the suitability and psi * zeta the prob of occupancy
     }
     }
@@ -155,6 +155,116 @@ cat("
 sink()
 
 
+sink("Code/JAGS/dynamic_autologistic_occ3.txt")
+cat("
+    model {
+    
+    # Priors    
+    
+    # mu_psi ~ dnorm(0, pow(1.5, -2))
+    # sd_psi ~ dt(0, pow(2,-2), 1)T(0, ) # half cauchy distribution with scale? = 1.5? (or 1.5^2 - look up defition of cauchy scale)
+    
+    # mu_p ~ dnorm(0, pow(1.5, -2))
+    # sd_p ~ dt(0, pow(2,-2), 1)T(0, )
+    
+    #for(i in 1:n_huc12) {
+    #  b0_psi[i] ~ dnorm(mu_psi, sd_psi)
+    # }
+    
+    
+    a0_p ~ dnorm(0, pow(1.5, -2)) # fixed intercept
+    a1 ~ dnorm(0, pow(1.5, -2))
+    a2 ~ dnorm(0, pow(1.5, -2))T( , 0)  # behavioral effect for reduced detect with removal
+    
+    
+    for(i in 1:36) { # first 36 records are in western maryland
+    # a0_p[i] ~ dnorm(mu_p, sd_p)
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    logit(p[i,j,t]) <- a0_p + a1 * prcp7[i, j] # add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i] ****consider separate fixed effect a0_p by region****************
+    }
+    }
+    } 
+    
+    for(i in 37:n_sites) {
+    # a0_p[i] ~ dnorm(mu_p, sd_p)
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    logit(p[i,j,t]) <- a0_p + a2 * j + a1 * prcp7[i, j] #  add covariates surfcoarse? cobble? precip, precip*area, airtemp + b4 * precip[i] + b5 * area[i]
+    }
+    }
+    } 
+    
+    mu_b0 ~ dnorm(0, pow(1.5, -2))
+    b1 ~ dnorm(0, pow(1.5, -2))
+    b2 ~ dnorm(0, pow(1.5, -2))
+    b3 ~ dnorm(0, pow(1.5, -2))
+    b4 ~ dnorm(0, pow(1.5, -2))
+    b5 ~ dnorm(0, pow(1.5, -2))
+    b6 ~ dnorm(0, pow(1.5, -2))
+    # mu_b6 ~ dnorm(0, pow(1.5, -2))
+    
+    sd_b0 ~ dt(0, pow(1.3, -2), 1)T(0, )
+    # sd_b6 ~ dt(0, pow(1.5, -2), 1)T(0, )
+    
+    # sd_b0 ~ dunif(0, 5)
+    # sd_b6 ~ dunif(0, 5)
+    
+    for(h in 1:n_sites) {
+    b0[h] ~ dnorm(mu_b0, sd_b0)
+    # b6[h] ~ dnorm(mu_b6, sd_b6)
+    }
+    
+    # Process model
+    for(i in 1:n_sites) { # sites or transects or streams?
+    logit(psi[i, 1]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] # multiple the whole thing by vector of species range + b4 * air_mean[i] * air_mean[i]
+    Z[i, 1] ~ dbern(psi[i, 1]) # * zeta[i])
+    
+    for(t in 2:n_years) {
+    logit(psi[i,t]) <- b0[i] + b1 * forest[i] + b2 * slope[i] + b3 * air_mean[i] + b4 * precip[i] + b5 * Z[i, t-1] #  b6[huc[i]] * Z[i, t-1] # trouble getting convergence for b6 varying by huc - trying larger huc and more informative prior - or just use region instead + b4 * air_mean[i] * air_mean[i]
+    Z[i, t] ~ dbern(psi[i, t]) # * zeta[i]) # makes psi1 the suitability and psi * zeta the prob of occupancy
+    }
+    }
+    
+    # for(i in 1:n_sites) {
+    # for(t in 2:n_years) {
+    # psi[i, t] <- psi1[i, t] * zeta[i]
+    # }
+    # }
+    
+    # Observation model - need to separate for visits vs. passes
+    for(i in 1:n_sites) {
+    for(t in 1:n_years) {
+    for(j in 1:n_passes) {
+    mu_y[i,j,t] <- Z[i, t] * p[i,j,t]
+    y[i,j,t] ~ dbern(mu_y[i,j,t])
+    }
+    }
+    }
+    
+    # Derived parameters?
+    mean_psi <- mean(psi[ , ])
+    mean_p <- mean(p[ , 1, ])
+    
+    for(t in 1:n_years) {
+    Z_sum[t] <- sum(Z[ , t])
+    }
+    
+    # for(i in 1:n_sites) { 
+    for(t in 2:n_years) {
+    turnover[t] <- sum(abs(Z[ , t] - Z[ , t-1])) / n_sites
+    }
+    # }
+    
+    # calculate average turnover rates per region across years?
+    
+    
+    # AUC
+    
+    } # end model
+    
+    ", fill=TRUE)
+sink()
 
 # make data list for JAGS
 # pairs(covs[ , c("forest", "slope_pcnt", "air_mean", "prcp_mo_mean", "AreaSqKM", "elevation", "impervious")])
@@ -187,7 +297,7 @@ fill_len <- length(dfus_init[dfus_init == -Inf]) # how many site-years with no o
 dfus_init[dfus_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = dfus_init)
+  list(Z = dfus_init * as.numeric(covs$DFUS))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -260,7 +370,7 @@ fill_len <- length(dmon_init[dmon_init == -Inf]) # how many site-years with no o
 dmon_init[dmon_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = dmon_init)
+  list(Z = dmon_init * as.numeric(covs$DMON))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -308,7 +418,7 @@ fill_len <- length(doch_init[doch_init == -Inf]) # how many site-years with no o
 doch_init[doch_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = doch_init)
+  list(Z = doch_init * as.numeric(covs$DOCH))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -356,7 +466,7 @@ fill_len <- length(ebis_init[ebis_init == -Inf]) # how many site-years with no o
 ebis_init[ebis_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = ebis_init)
+  list(Z = ebis_init * as.numeric(covs$EBIS))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -404,14 +514,14 @@ fill_len <- length(egut_init[egut_init == -Inf]) # how many site-years with no o
 egut_init[egut_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = egut_init)
+  list(Z = egut_init) # * as.numeric(covs$EGUT))
   # p = runif(n_years, 0.4, 0.6))
 }
 
 autlog <- jags(data = egut_data,
                inits = inits,
                parameters.to.save = params_autlog,
-               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               model.file = "Code/JAGS/dynamic_autologistic_occ3.txt",
                n.chains = nc,
                n.adapt = na,
                n.iter = ni,
@@ -452,7 +562,7 @@ fill_len <- length(elon_init[elon_init == -Inf]) # how many site-years with no o
 elon_init[elon_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = elon_init)
+  list(Z = elon_init * as.numeric(covs$ELON))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -500,7 +610,7 @@ fill_len <- length(gpor_init[gpor_init == -Inf]) # how many site-years with no o
 gpor_init[gpor_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = gpor_init)
+  list(Z = gpor_init * as.numeric(covs$GPOR))
   # p = runif(n_years, 0.4, 0.6))
 }
 
@@ -548,7 +658,7 @@ fill_len <- length(prub_init[prub_init == -Inf]) # how many site-years with no o
 prub_init[prub_init == -Inf] <- rbinom(fill_len, 1, 0.5) # fill unobs with 50% chance of being occupied for starting values
 
 inits <- function(){
-  list(Z = prub_init)
+  list(Z = prub_init) # * as.numeric(covs$PRUB))
   # p = runif(n_years, 0.4, 0.6))
 }
 
