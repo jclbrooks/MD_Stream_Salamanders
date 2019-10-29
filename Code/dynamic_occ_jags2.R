@@ -266,6 +266,30 @@ cat("
     ", fill=TRUE)
 sink()
 
+
+params_autlog <- c(# "Z",
+  "mean_psi",
+  "mean_p",
+  "a0_p",
+  "a1",
+  "a2",
+  "mu_b0",
+  # "mu_b6",
+  "sd_b0",
+  # "sd_b6",
+  "b1",
+  "b2",
+  "b3",
+  "b4",
+  "b5",
+  "b6",
+  # "psi",
+  "Z",
+  "mu_p",
+  "sd_p",
+  "Z_sum",
+  "turnover")
+
 # make data list for JAGS
 # pairs(covs[ , c("forest", "slope_pcnt", "air_mean", "prcp_mo_mean", "AreaSqKM", "elevation", "impervious")])
 pdf(file = "Results/scatterplot_matrix.pdf")
@@ -301,28 +325,6 @@ inits <- function(){
   # p = runif(n_years, 0.4, 0.6))
 }
 
-params_autlog <- c(# "Z",
-  "mean_psi",
-  "mean_p",
-  "a0_p",
-  "a1",
-  "a2",
-  "mu_b0",
-  # "mu_b6",
-  "sd_b0",
-  # "sd_b6",
-  "b1",
-  "b2",
-  "b3",
-  "b4",
-  "b5",
-  "b6",
-  # "psi",
-  "Z",
-  "mu_p",
-  "sd_p",
-  "Z_sum",
-  "turnover")
 
 autlog <- jags(data = dfus_data,
                inits = inits,
@@ -569,7 +571,7 @@ inits <- function(){
 autlog <- jags(data = elon_data,
                inits = inits,
                parameters.to.save = params_autlog,
-               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               model.file = "Code/JAGS/dynamic_autologistic_occ3.txt",
                n.chains = nc,
                n.adapt = na,
                n.iter = ni,
@@ -665,7 +667,7 @@ inits <- function(){
 autlog <- jags(data = prub_data,
                inits = inits,
                parameters.to.save = params_autlog,
-               model.file = "Code/JAGS/dynamic_autologistic_occ2.txt",
+               model.file = "Code/JAGS/dynamic_autologistic_occ3.txt",
                n.chains = nc,
                n.adapt = na,
                n.iter = ni,

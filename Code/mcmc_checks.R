@@ -11,7 +11,7 @@ library(dplyr)
 
 ######### Load MCMC Object #########
 
-out <- readRDS("Results/dfus_msmc.rds")
+out <- readRDS("Results/dfus_mcmc.rds")
 
 out$summary
 
@@ -38,7 +38,50 @@ p + facet_text(size = 15)
 # p <- mcmc_trace(samples, regex_pars = c("Z_sum")) # too big I think
 # p + facet_text(size = 15)
 
+#------------- elon ----------------
 
+out <- readRDS("Results/elon_mcmc.rds")
+
+out$summary
+
+samples <- out$samples
+
+p <- mcmc_trace(samples, regex_pars = c("sd"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("mean_psi"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("b"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, pars = c("a0_p", "a1", "a2"))
+p + facet_text(size = 15)
+
+
+#------------- prub ----------------
+
+out <- readRDS("Results/prub_mcmc.rds")
+
+out$summary
+
+samples <- out$samples
+
+p <- mcmc_trace(samples, regex_pars = c("sd"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("mean_psi"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, regex_pars = c("b"))
+p + facet_text(size = 15)
+
+p <- mcmc_trace(samples, pars = c("a0_p", "a1", "a2"))
+p + facet_text(size = 15)
+
+
+
+#------------------ potential figures ------------
 posterior <- as.matrix(out$samples)
 
 plot_title <- ggtitle("Posterior distributions",
@@ -46,9 +89,15 @@ plot_title <- ggtitle("Posterior distributions",
 mcmc_areas(posterior, regex_pars = c("Z_sum"),
            prob = 0.8) + plot_title
 
+
+
+
+
+
+
 # https://cran.r-project.org/web/packages/bayesplot/vignettes/plotting-mcmc-draws.html
 # Summarize posteriors with intervals or areas
-posterior_1 <- dplyr::select(as.data.frame(posterior), -starts_with("Z_sum"))
+posterior_1 <- dplyr::select(as.data.frame(posterior), -starts_with("Z"))
 
 mcmc_intervals(x = posterior_1, pars = c("mu_b0", "b1", "b2", "b3", "b4", "b5", "b6")) # remove whichever one wasn't in the model
 
