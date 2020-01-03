@@ -7,10 +7,11 @@
 *.jpeg
 *.jpg
 *.png
-*.docx
 *.pdf
 Results/
 Landscape_ecology/
 landscape_characteristics/Catchments02.csv
 landscape_characteristics/Catchments05.csv
 Data/Derived/
+Literature Review for PCIP and TEMP covariates.docx
+Code/plots_ch1_GLMMs.docx
