@@ -47,7 +47,13 @@ sallies <- sal %>%
          up_down = ifelse(is.na(up_down), "REF", up_down))
 
 sallies_long <- sallies %>%
-  pivot_longer(cols = c(DFUS, DOCH, DMON, EBIS, GPOR, PRUB), names_to = "species")
+  pivot_longer(cols = c(DFUS, DOCH, DMON, EBIS, GPOR, PRUB), names_to = "species") %>%
+  mutate(species = ifelse(species == "DFUS", "Northern Dusky", species),
+         species = ifelse(species == "DMON", "Seal", species),
+         species = ifelse(species == "DOCH", "Allegheny Mountain Dusky", species),
+         species = ifelse(species == "EBIS", "Northern Two-lined", species),
+         species = ifelse(species == "GPOR", "Northern Spring", species),
+         species = ifelse(species == "PRUB", "Northern Red", species))
 
 # means and sd's
 type <- sallies %>%
@@ -84,7 +90,7 @@ colnames(wd) <- c("date", "stream", "transect", "mean_wetted_width", "mean_depth
 
 sallies_all <- sallies %>%
   left_join(wd) %>%
-  left_join(sub)
+  left_join(sub) 
 
 sal_means <- sallies %>%
   group_by(stream, transect) %>%
@@ -133,15 +139,16 @@ ggplot(stack(counts_long), aes(x = ind, y = values)) +
 ```{r species by stream, echo = FALSE, message=FALSE, warning=FALSE}
 sallies_long$stream <- factor(sallies_long$stream,levels = c("ALEX", "BEARHILL", "DUNGHILL", "KOCH", "WSHALEN", "BLUELICK", "ELKLICK", "MILL", "POPLICKTRIB"))
 
-ggplot(sallies_long, aes(x = type, y = value)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Type") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_long, aes(x = type, y = value)) + geom_boxplot() + xlab("Stream Type") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 20, color = "black"),axis.text.x = element_text(size = 20, color = "black"),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
-        panel.background = element_blank()) + scale_x_discrete(labels = c("Reference", "AMD-Impacted"))
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 19)) + scale_x_discrete(labels = c("Reference", "Remediated"))
 ```
 
 
@@ -159,60 +166,60 @@ This was the only statistically significant covariate in all of the models that 
 # 
 # ggplot(sallies_all, aes(pH, DMON)) + geom_point() + geom_line(aes(x=pH, y=dmon_pred), data = predicted_df) + theme_classic()
 
-ggplot(sallies_all, aes(x = mean_wetted_width + cobble, DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x)) + theme_classic()
+ggplot(sallies_all, aes(x = mean_wetted_width + cobble, DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ x + theme_classic()
 
-ggplot(sallies_all, aes(x = mean_wetted_width , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_all, aes(x = mean_wetted_width , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ x)  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 25),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank()) + 
-  xlab("Mean Wetted Width (m)") + ylab("DMON Counts") + xlim(0,6) + ylim(-1,12)
+  xlab("Mean Wetted Width (m)") + ylab("Seal Salamander Counts") + xlim(0,6) + ylim(-1,12)
 
-ggplot(sallies_all, aes(x = cobble , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_all, aes(x = cobble , DMON)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ x)  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 25),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank()) + 
-  xlab("Percent Cobble") + ylab("DMON Counts") + xlim(0,100) + ylim(-1,12)
+  xlab("Mean Percent Cobble") + ylab("Seal Salamander Counts") + xlim(0,100) + ylim(-1,12)
 
 ```
 
 # Other metrics not included in the GLMMs
 
 ```{r, sallies - percent silt/clay, echo = FALSE, message=FALSE, warning=FALSE}
-ggplot(sallies_all, aes(x = pH , EBIS)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_all, aes(x = EC , EBIS)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ x)  + theme(text = element_text(family = "Times New Roman", size = 20, color = "black"),axis.text.x = element_text(size = 20, color = "black"),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 23, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank()) + 
-  xlab("pH") + ylab("EBIS Counts") + xlim(4,9) + ylim(-1,12)
+  xlab("Electrical Conductivity (μS/cm)") + ylab("Northern Two-Lined Salamander Counts") + xlim(0,150) + ylim(-1,12)
 ```
 
 
 ## USE THIS ONE
 ```{r, sallies - percent sand, echo = FALSE, message=FALSE, warning=FALSE}
-ggplot(sallies_all, aes(x = cobble , GPOR)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ exp(x))  + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_all, aes(x = cobble , GPOR)) + geom_point() + geom_smooth(data = sallies_all, method = "glm", formula = y ~ x)  + theme(text = element_text(family = "Times New Roman", size = 20, color = "black"),axis.text.x = element_text(size = 20, color = "black"),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 23, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank()) + 
-  xlab("Percent Cobble") + ylab("GPOR Counts") + xlim(0,100) + ylim(-1,8)
+  xlab("Mean Percent Cobble") + ylab("Northern Spring Salamander Counts") + xlim(0,100) + ylim(-1,6)
 ```
  
  
@@ -242,15 +249,15 @@ Shows that the limestone sand dumps are working to some extent on pH.
 ```{r, pH, echo = FALSE, message=FALSE, warning=FALSE}
 sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
 
-ggplot(sallies, aes(x = up_down, y = pH)) + geom_boxplot(fill = "lightblue") + xlab("Section of Stream") + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15, color = "black"),
-        axis.text.y = element_text(size = 15, color = "black"),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_all, aes(x = type, y = cobble)) + geom_boxplot(fill = "lightblue") + xlab("Stream Type") + ylab("Mean Percent Cobble") +  theme(text = element_text(family = "Times New Roman", size = 20),axis.text.x = element_text(size = 20, color = "black"),
+        axis.text.y = element_text(size = 20, color = "black"),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
-        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference"))
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Reference", "Remediated")) + ylim(0,100)
 ```
 
 ## USE THIS ONE
@@ -258,15 +265,15 @@ Shows that EC is still not great downstream...
 ```{r, EC, echo = FALSE, message=FALSE, warning=FALSE}
 sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
 
-ggplot(sallies, aes(x = up_down, y = EC)) + geom_boxplot(fill = "lightblue") + xlab("Section of Stream") + theme(text = element_text(family = "Times New Roman", size = 15),axis.text.x = element_text(size = 15, color = "black"),
-        axis.text.y = element_text(size = 15, color = "black"),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies, aes(x = up_down, y = EC)) + geom_boxplot(fill = "lightblue") + xlab("Section of Stream") + theme(text = element_text(family = "Times New Roman", size = 20),axis.text.x = element_text(size = 20, color = "black"),
+        axis.text.y = element_text(size = 20, color = "black"),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
-        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference")) + ylab("Electrical Conductivity (μS)")
+        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference")) + ylab("Electrical Conductivity (μS/cm)")
 
 ```
 
@@ -282,17 +289,18 @@ ggplot(sal_means, aes(x = reorder(stream, cobble, FUN = median), cobble)) + geom
 ## USE THIS ONE
 This one is all of the graphs below but in one graph. I like it but may change it to a bar graph with standard deviations...
 ```{r species counts by stream}
-sallies$up_down <- factor(sallies$up_down, levels = c("UP", "DOWN", "REF"))
+sallies_long$up_down <- factor(sallies_long$up_down, levels = c("UP", "DOWN", "REF"))
 
-ggplot(sallies_long, aes(x = up_down, y = value)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 15, color = "black"),axis.text.x = element_text(size = 15, angle = 45, hjust = 1, color = "black"),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20, margin = margin(t = 20, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+ggplot(sallies_long, aes(x = up_down, y = value)) + geom_boxplot(fill = "lightblue") + theme_classic() + xlab("Stream Section") + ylab("Individuals/Transect") + facet_wrap(~species, nrow = 2, ncol = 3)  + theme(text = element_text(family = "Times New Roman", size = 20, color = "black"),axis.text.x = element_text(size = 20, angle = 45, hjust = 1, color = "black"),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 25, margin = margin(t = 20, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
-        panel.background = element_blank()) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference"))
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 19)) + scale_x_discrete(labels = c("Upstream", "Downstream", "Reference"))
 ```
 
 ```{r, DFUS, echo = FALSE, message=FALSE, warning=FALSE}
