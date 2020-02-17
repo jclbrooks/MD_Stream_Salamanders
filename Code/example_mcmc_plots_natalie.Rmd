@@ -1,0 +1,491 @@
+---
+title: "Final_MCMC"
+author: "Haydt"
+date: "10/16/2019"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo = FALSE}
+
+library(ggplot2)
+library(tidybayes)
+library(bayesplot)
+library(coda)
+library(rjags)
+library(RColorBrewer)
+library(cowplot)
+library(MCMCvis)
+library(dplyr)
+library(jagsUI)
+library(htmlTable)
+library(grid)
+library(gridExtra)
+library(sjPlot)
+
+```
+
+```{r}
+
+samples <- readRDS("/Users/nataliehaydt/Desktop/Analysis/mcmc_manip/all_site_reg_final.rds")
+
+```
+
+```{r}
+
+whiskerplot(samples, parameters = "density")
+
+```
+
+```{r dataframe conversion}
+
+mcmc_df <- as.data.frame(as.matrix(samples$samples))
+mcmc_list <- as.mcmc.list(samples$samples)
+
+```
+
+```{r traceplots}
+par(mar=c(1,1,1,1))
+
+color_scheme_set("viridis")
+p <- mcmc_trace(mcmc_list, regex_pars = c("N")) # number inds per site
+p + facet_text(size = 15) + theme(legend.position = "none")
+
+
+p <- mcmc_trace(mcmc_list, regex_pars = c("density")) # N / site + buffer
+p + facet_text(size = 15) + theme(legend.position = "none")
+
+
+a2 <- mcmc_trace(mcmc_list, pars = "alpha2") # trap behavior covariate
+a2 + facet_text(size = 15) + theme(legend.position = "none")
+
+a3 <- mcmc_trace(mcmc_list, pars = "alpha3") # trap behavior covariate
+a3 + facet_text(size = 15) + theme(legend.position = "none")
+
+
+p <- mcmc_trace(mcmc_list, regex_pars = c("mu", "sd")) # mean and stdevs of heirarchical vars - alpha1 and alpha0; sd of a1 and psi worrisome?
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, pars = c("alpha0[1,1]", "alpha0[2,1]", "alpha0[3,1]", "alpha0[4,1]", "alpha0[5,1]", "alpha0[6,1]", "alpha0[7,1]", "alpha0[8,1]", "alpha0[9,1]", "alpha0[10,1]", "alpha0[11,1]", "alpha0[12,1]")) # baseline prob. of capture per site and males
+p + facet_text(size = 15) + theme(legend.position = "none")
+# p <- mcmc_trace(mcmc_list, pars = c("alpha0[7,1]", "alpha0[8,1]", "alpha0[9,1]", "alpha0[10,1]", "alpha0[11,1]", "alpha0[12,1]")) # baseline prob. of capture per site and males
+# p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, pars = c("alpha0[1,2]", "alpha0[2,2]", "alpha0[3,2]", "alpha0[4,2]", "alpha0[5,2]", "alpha0[6,2]", "alpha0[7,2]", "alpha0[8,2]", "alpha0[9,2]", "alpha0[10,2]", "alpha0[11,2]", "alpha0[12,2]")) # baseline prob. of capture per site and females
+p + facet_text(size = 15)
+# p <- mcmc_trace(mcmc_list, pars = c("alpha0[7,2]", "alpha0[8,2]", "alpha0[9,2]", "alpha0[10,2]", "alpha0[11,2]", "alpha0[12,2]")) # baseline prob. of capture per site and females
+# p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, pars = c("alpha1[1,1]", "alpha1[2,1]", "alpha1[3,1]", "alpha1[4,1]", "alpha1[5,1]", "alpha1[6,1]")) # overall prob. of capture per site and males
+p + facet_text(size = 15)
+p <- mcmc_trace(mcmc_list, pars = c("alpha1[7,1]", "alpha1[8,1]", "alpha1[9,1]", "alpha1[10,1]", "alpha1[11,1]", "alpha1[12,1]")) # overall prob. of capture per site and males
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, pars = c("alpha1[1,2]", "alpha1[2,2]", "alpha1[3,2]", "alpha1[4,2]", "alpha1[5,2]", "alpha1[6,2]")) # overall prob. of capture per site and females
+p + facet_text(size = 15)
+p <- mcmc_trace(mcmc_list, pars = c("alpha1[7,2]", "alpha1[8,2]", "alpha1[9,2]", "alpha1[10,2]", "alpha1[11,2]", "alpha1[12,2]")) # overall prob. of capture per site and females
+p + facet_text(size = 15)
+
+b <- mcmc_trace(mcmc_list, regex_pars = "beta") # trap behavior covariate
+b + facet_text(size = 15) + theme(legend.position = "none")
+
+p <- mcmc_trace(mcmc_list, regex_pars = "psi.sex") # psi by sex
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, regex_pars = "p_cap_day") # capture prob per day
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, regex_pars = "p_cap_sex") # capture prob per sex
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, regex_pars = "p_cap_site") # capture prob per site
+p + facet_text(size = 15)
+
+d <- mcmc_trace(mcmc_list, regex_pars = "deviance") # deviance
+d + facet_text(size = 15) + theme(legend.position = "none")
+
+p <- mcmc_trace(mcmc_list, pars = c("sigma[1,1]", "sigma[2,1]", "sigma[3,1]", "sigma[4,1]", "sigma[5,1]", "sigma[6,1]")) # baseline prob. of capture per site and males
+p + facet_text(size = 15)
+
+p <- mcmc_trace(mcmc_list, pars = c("sigma[7,1]", "sigma[8,1]", "sigma[9,1]", "sigma[10,1]", "sigma[11,1]", "sigma[12,1]")) # baseline prob. of capture per site and males
+p + facet_text(size = 15)
+
+```
+
+```{r gelman}
+
+coda::gelman.plot(mcmc_list)
+## mu_a1[1] !!!!!!
+## alpha1[3,2] ?!
+## beta 1 and 2? a bit higher than 1?
+## sd_psi!!!!!!!
+## sigma_mean!!!!!!! -- what is this?
+## sigma_site[1] !!!!!!!!! and [4]
+## sigma_site[2] ?! and [7] and [12]
+## p_cap_site[4] !!!!! [11] and [12]
+
+##### Is this partly due to setting adaptions along wit the low recap rate?
+
+```
+
+```{r}
+
+ess <- effectiveSize(mcmc_list) # from package coda
+print(ess)
+hist(ess, breaks = 50)
+
+```
+
+```{r density plots}
+# histogram density plots
+p <- mcmc_hist(mcmc_list, regex_pars = c("density"))
+p + facet_text(size = 15)
+
+# density plot showing chains
+color_scheme_set("viridis")
+p <- mcmc_dens_overlay(mcmc_list, regex_pars = c("density"))
+p + facet_text(size = 15)
+
+# violin plot
+color_scheme_set("teal")
+p <- mcmc_violin(mcmc_list, regex_pars = c("density"), probs = c(0.1, 0.5, 0.9))
+p + facet_text(size = 15)
+
+
+```
+
+```{r figure 1}
+# FIGURE 1 - Density vs Capture Prob.
+
+color_scheme_set("viridis") ####
+p1 <- mcmc_intervals(mcmc_list, regex_pars = c("density")) + 
+  xlab("Density (Individuals Per 100m)") +
+  ylab("Site")+
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"))
+        #plot.margin = unit(c(1,1,1.5,1),"cm"))
+
+
+
+# ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point() + 
+#   theme(axis.title.x = element_text(family="Times",size=20,
+#                 face="bold",colour = "Black",vjust=-1,hjust=0.5))+
+#   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+
+
+
+
+
+p1 <- mcmc_intervals(mcmc_list, regex_pars = c("density")) +
+  xlab("Density (Individuals Per 100m)") +
+  ylab("Site")+
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = unit(c(1,1,1,1), "cm"))
+p1
+
+color_scheme_set("viridis") ####
+p2 <- mcmc_intervals(mcmc_list, regex_pars = c("p_cap_site")) +
+  xlab("Capture Probability (Proportion)") +
+  ylab("")+
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = unit(c(1,1,1,1), "cm"))
+
+
+plot_grid(p1, p2, ncol = 2, nrow = 1)  ##### FIGURE 1 - Density vs Capture Prob.
+
+```
+
+```{r figure 2}
+# Capture Prob. Per Day
+
+color_scheme_set("viridis") ####
+p2 <- mcmc_intervals(mcmc_list, regex_pars = c("p_cap_day")) +
+  xlab("Capture Probability") +
+  ylab("Sampling Day")+
+  ggplot2::scale_y_discrete(labels = c("1":"4")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+
+p2
+
+p2 <- mcmc_areas(mcmc_list, regex_pars = c("p_cap_day")) +
+  xlab("Capture Probability (Proportion)") +
+  ylab("Sampling Day")+
+  ggplot2::scale_y_discrete(labels = c("1":"4")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13, margin = margin(0,10,0,0)),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = unit(c(1,1,1,1), "cm"))
+
+
+p2
+
+# Would boxplots be better?
+
+```
+
+```{r prior vs posterior plots}
+
+color_scheme_set("brightblue")
+p <- mcmc_dens(mcmc_list, regex_pars = c("mu_a0"))
+prior_mu_a0 <- rnorm(39996, 0, 0.1)
+p2 <- density(prior_mu_a0)
+plot(p2)
+
+#lines(p2, col = "red", add = TRUE)
+p
+#line(p2, col = "red")
+
+```
+
+```{r summary, echo = FALSE}
+
+full_summary <- MCMCsummary(mcmc_list, round = 3)
+beta_summary <- MCMCsummary(mcmc_list, round = 3, params = )
+# htmlTable(full_summary, file = "/Users/nataliehaydt/Desktop/Analysis/mcmc_manip/parameter_summaries.html")
+
+```
+
+```{r}
+
+# Depth and Forest Cover vs. Median Densities
+depth <- read.csv(file = "/Users/nataliehaydt/Desktop/Analysis/LandUse/Avg_Depth_m.csv")
+forest <- read.csv(file = "/Users/nataliehaydt/Desktop/Analysis/LandUse/Forest_Cover.csv")
+
+density <- MCMCsummary(mcmc_list, round = 2,
+            params = 'density')
+
+beta <- left_join(depth, forest, by = "site")
+density$site <- c(1:12)
+beta_density <- left_join(beta, density, by = "site")
+colnames(beta_density)[colnames(beta_density)=="50%"] <- "density"
+
+
+## Depth vs. Density
+g1 <- ggplot(data = beta_density, aes(x = depth, y = density)) + geom_point() +
+  ylab("Density (Individuals Per 100m)") + 
+  xlab("Canal Depth (m)") +
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title.x = element_text(size=12, margin = margin(7,0,0,0)),
+        axis.title.y = element_text(size=12, margin = margin(0,10,0,0)),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black")) +
+   geom_smooth(method = "lm")
+# g1
+
+g2 <- ggplot(data = beta_density, aes(x = forest, y = density)) + geom_point() +
+  xlab("Forest Cover (Proportion)") +
+  ylab("")+
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title.x = element_text(size=12, margin = margin(7,0,0,0)),
+        axis.title.y = element_text(size=12),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"))  +
+   geom_smooth(method = "lm") +
+  expand_limits(y = 0, x = 0.7)
+# g2
+
+mod1 <- lm(density ~ depth + forest, data = beta_density)
+summary(mod1) #### Forest p value is 0.0590; depth not sig., but might expect to be sig. for other species
+tab_model(mod1, file = "/Users/nataliehaydt/Desktop/Analysis/beta_mod.html", show.icc = FALSE)
+
+#plot_grid(g1, g2, ncol = 2, nrow = 1) 
+grid.arrange(g1, g2, ncol = 2, nrow = 1)
+
+b <- mcmc_areas(mcmc_list, regex_pars = c("beta"))  #!!!!! diff. than model results?
+b +
+  xlab("Covariate Estimate") +
+  ylab("") +
+  #ggplot2::scale_y_discrete(labels = c("Depth","Forest")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13, margin=margin(20,0,0,0)),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain", vjust = 0,
+                                   hjust = -0.75, angle = 90),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+
+```
+
+```{r sigma}
+
+color_scheme_set("viridis") ####
+s1 <- mcmc_intervals(mcmc_list, regex_pars = c("sigma_site")) + 
+  xlab("Sigma (100 meters)") +    #### !!!!
+  ylab("Site") +
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"))
+s1
+
+color_scheme_set("viridis")
+s2 <- mcmc_dens_chains(mcmc_list, regex_pars = c("sigma_sex"))
+s2 + coord_cartesian(xlim = c(0, 2)) +
+  xlab("Sigma (100 meters)") +    #### !!!!
+  ylab("") +
+  ggplot2::scale_y_discrete(labels = c("Male","Female")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13, margin=margin(20,0,0,0)),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain", vjust = 0,
+                                   hjust = -0.75, angle = 90),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+s3 <- mcmc_dens_chains(mcmc_list, regex_pars = c("p_cap_sex"))
+s3 + coord_cartesian(xlim = c(0, 0.01)) +
+  xlab("Capture Probability (Proportion)") +    #### !!!!
+  ylab("") +
+  ggplot2::scale_y_discrete(labels = c("Male","Female")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13, margin=margin(20,0,0,0)),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain", vjust = 0,
+                                   hjust = -0.75, angle = 90),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+
+```
+
+```{r prob and sigma}
+
+color_scheme_set("viridis")
+plot_grid(p1, s1, ncol = 2, nrow = 1)
+
+```
+
+```{r}
+
+p1 <- mcmc_intervals(mcmc_list, regex_pars = c("psi.sex")) +
+  xlab("Proportion Females") +
+  ylab("Site")+
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = unit(c(1,1,1,1), "cm"))
+p1
+
+color_scheme_set("viridis") ####
+p2 <- mcmc_intervals(mcmc_list, regex_pars = c("p_cap_site")) +
+  xlab("Capture Probability (Proportion)") +
+  ylab("")+
+  ggplot2::scale_y_discrete(labels = c("1":"12")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, margin=margin(0,0,10,0)),
+        axis.title.x = element_text(size=12, margin=margin(7,0,0,0)),
+        axis.title.y = element_text(size=13),
+        axis.text.x = element_text(size = 10, face = "plain"),
+        axis.text.y = element_text(size = 10, face = "plain"),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = unit(c(1,1,1,1), "cm"))
+
+
+plot_grid(p1, p2, ncol = 2, nrow = 1)  ##### FIGURE 1 - Density vs Capture Prob.
+
+
+```
+
+
+```{r}
+# PPO Prior Posterior Overlap
+# MCMCvis package
+
+prior <- rnorm(30000, 0, 0.5)
+
+MCMCtrace(mcmc_list, params = c("beta1", "beta2", "alpha2", "alpha3")
+          , priors = prior, pdf = TRUE, sz_txt = 0.75)
+
+MCMCtrace(mcmc_list, params = c("mu_psi")
+          , priors = prior, pdf = TRUE, sz_txt = 0.75)
+
+prior <- rnorm(30000, 0, 0.1)
+
+MCMCtrace(mcmc_list, params = c("mu_a0")
+          , priors = prior, pdf = TRUE, sz_txt = 0.75)
+
+# sd_a0 ~ dt(0, pow(1.5, -2), 1)T(0, )
+# sd_a1 ~ dt(0, pow(1, -2), 1)T(0, 1000)
+# sd_psi ~ dt(0, pow(1.5, -2), 1)T(0, )
+
+```
+
+
+
+
