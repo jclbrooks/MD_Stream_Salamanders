@@ -1,12 +1,12 @@
 # Checking Species Ranges
 # We wanted to check if some of the species observed were found outside of the species range. We created a species distribution matrix in format_landscape_data.R and edited it into the usable spp_dist object in prep_occ.R. Here I compared this species distribution matrix to our occupancy matrix.
 
-# spec_dist == combos
-#str(spec_dist) # 210 obs. of 13 variables, from format_landscape_data.R
+# Load in objects that are used in the model
+#str(spec_dist) # 210 obs. of 13 variables, from format_landscape_data.R; not used because this is altered in future code
 str(spp_dist) # line 52 of prep_occ.R; species distribution matrix
 str(df_occ_all) # from line 95 prep_occ.R; occupancy matrix
 
-#reformat the occupancy data 
+# reformat the occupancy data 
 occ <- df_occ_all %>%
   select(year, region, transect, species, pass1, pass2, pass3, pass4) %>%
   mutate(present_in_year = ifelse(pass1 == 1 | pass2 == 1 | pass3 == 1 | pass4 == 1, 1, NA),
