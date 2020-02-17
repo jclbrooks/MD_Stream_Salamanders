@@ -337,4 +337,70 @@ aictab(cand.set = prub, modnames = model_names)
 
 # response is constant since there was just one count
 
+####################
+# Effect of up_down
+dfus_up <- glm(DFUS ~ up_down, family = poisson, data = sal_all)
+summary(dfus_up)
+plot(dfus_up)
+hist(dfus_up)
 
+dmon_up <- glm(DMON ~ up_down, family = poisson, data = sal_all)
+summary(dmon_up)
+plot(dmon_up)
+hist(dmon_up)
+
+doch_up <- glm(DOCH ~ up_down, family = poisson, data = sal_all)
+summary(doch_up)
+plot(doch_up)
+hist(doch_up)
+
+ebis_up <- glm(EBIS ~ up_down, family = poisson, data = sal_all)
+summary(ebis_up)
+plot(ebis_up)
+hist(ebis_up)
+# SIGNIFICANT
+
+gpor_up <- glm(GPOR ~ up_down, family = poisson, data = sal_all)
+summary(gpor_up)
+plot(gpor_up)
+hist(gpor_up)
+
+prub_up <- glm(PRUB ~ up_down, family = poisson, data = sal_all)
+summary(prub_up)
+plot(prub_up)
+hist(prub_up)
+
+####################
+# Effect of type
+dfus_up <- glm(DFUS ~ type, family = poisson, data = sal_all)
+summary(dfus_up)
+plot(dfus_up)
+hist(dfus_up)
+
+dmon_up <- glm(DMON ~ type, family = poisson, data = sal_all)
+summary(dmon_up)
+plot(dmon_up)
+hist(dmon_up)
+# SIGNIFICANT
+
+doch_up <- glm(DOCH ~ type, family = poisson, data = sal_all)
+summary(doch_up)
+plot(doch_up)
+hist(doch_up)
+# SIGNIFICANT
+
+ebis_up <- glm(EBIS ~ type, family = poisson, data = sal_all)
+summary(ebis_up)
+plot(ebis_up)
+hist(ebis_up)
+
+gpor_up <- glm(GPOR ~ type, family = poisson, data = sal_all)
+summary(gpor_up)
+plot(gpor_up)
+hist(gpor_up)
+# SIGNIFICANT
+
+prub_up <- glm(PRUB ~ type, family = poisson, data = sal_all)
+summary(prub_up)
+plot(prub_up)
+hist(prub_up)
