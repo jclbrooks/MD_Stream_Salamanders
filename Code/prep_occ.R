@@ -30,10 +30,10 @@ transect_stream <- read_csv("Data/Location_Transect_Stream_Features_processed.cs
 
 # filter out sites with NA because of bad lat lon; also done below (line 84) for df_occ_all and spp_dist 
 featureids_matched <- featureids_matched %>%
-  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3",  "COST21-3", "West Shale North_1D"))
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3",  "COST21-3", "West Shale North_1D", "PRW227-A2", "PRW263-A1"))
 
 df_occ <- df_occ %>%
-  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "COST21-3", "West Shale North_1D"))
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST8-3", "COST21-3", "West Shale North_1D", "PRW227-A2", "PRW263-A1"))
 
 # fix the stream vs. transect naming issues to be consistent and work with other data
 spp_dist <- featureids_matched %>%
@@ -47,6 +47,10 @@ filter(spp_dist, WMaryland == 1) # check that worked as expected
 
 spp_dist <- spp_dist %>%
   select(-Transect, -stream)
+
+# filter out sites with NA because of bad lat lon
+spp_dist <- spp_dist %>%
+  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST21-3", "COST8-3", "West Shale North_1D", "PRW227-A2", "PRW263-A1")) 
 
 # write out object for later use
 saveRDS(spp_dist, "Data/Derived/spp_dist.rds")
@@ -84,9 +88,7 @@ df_covariates1 <- df_covariates %>%
 
 # select just daily weather data of interest
 
-# filter out sites with NA because of bad lat lon
-spp_dist <- spp_dist %>%
-  filter(!transect %in% c("COST28-2", "Fairway18-1", "Picnic 21-1", "COST21-3", "COST8-3", "West Shale North_1D")) 
+
 
 
 
