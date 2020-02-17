@@ -33,7 +33,8 @@ vars <- c("agriculture", "elevation", "forest", "impervious", "AreaSqKM")
 
 landscape_vars <- landscape_characteristics1 %>%
   filter(zone == "local",
-         variable %in% vars) %>%
+         variable %in% vars,
+         !(transect %in% c("PRW227-A2", "PRW263-A1"))) %>%
   # mutate(loc = paste0(.$region, "_", .$transect)) %>%
   select(region, transect, variable, value) %>%
   distinct() %>%
